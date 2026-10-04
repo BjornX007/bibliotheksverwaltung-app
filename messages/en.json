@@ -1,0 +1,142 @@
+{
+  "app": { "name": "School Library" },
+  "nav": {
+    "dashboard": "Dashboard",
+    "inventory": "Inventory",
+    "register": "Register books",
+    "loans": "Loans",
+    "students": "Students"
+  },
+  "language": { "label": "Language" },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Library overview",
+    "stats": {
+      "titles": "Titles",
+      "copies": "Total copies",
+      "available": "Available",
+      "onLoan": "On loan",
+      "overdue": "Overdue"
+    },
+    "recentLoans": "Recent loans",
+    "byCategory": "Books by category",
+    "columns": {
+      "student": "Student",
+      "book": "Book",
+      "due": "Due date",
+      "status": "Status"
+    },
+    "status": { "onLoan": "On loan", "overdue": "Overdue" }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in"
+    },
+    "setPassword": {
+      "title": "Set your password",
+      "hint": "At least 10 characters.",
+      "placeholder": "New password",
+      "submit": "Save and continue"
+    },
+    "errors": {
+      "invalid": "Email or password is incorrect.",
+      "invalid_link": "This link is invalid or expired. Ask for a new invitation.",
+      "short": "The password must be at least 10 characters.",
+      "failed": "Could not save the password. Try again."
+    },
+    "logout": "Log out"
+  },
+  "register": {
+    "title": "Register books",
+
+    "modeCash": "One by one",
+    "modeQty": "With quantity",
+
+    "hintCash": "Each scan adds 1 copy right away.",
+    "hintQty": "Each scan asks how many copies.",
+
+    "placeholder": "ISBN, title or author",
+    "search": "Search",
+    "scan": "Scan",
+    "closeCamera": "Close camera",
+
+    "cameraError": "Camera not available. Allow camera access, or type instead.",
+
+    "searching": "Searching…",
+    "invalidIsbn": "This ISBN is not valid. Check the number.",
+
+    "notFoundIsbn": "ISBN {isbn} was not found.",
+    "notFoundText": "No book found.",
+
+    "searchByTitle": "Search by title",
+    "addManually": "Add manually",
+    "notInList": "Not in the list? Add manually",
+
+    "heldIsbn": "ISBN {isbn} will be saved with the book",
+    "inStock": "{count} in stock",
+    "fromCatalog": "Catalog",
+
+    "quantity": "How many copies?",
+    "accept": "Accept",
+    "cancel": "Cancel",
+
+    "added": "Added {count} × {title}",
+
+    "sessionTitle": "Added in this session",
+    "openSession": "Open session",
+    "close": "Close",
+    "sessionEmpty": "Session is empty",
+
+    "source": {
+      "inventory": "In inventory",
+      "catalog": "From catalog",
+      "manual": "Manual"
+    },
+
+    "manual": {
+      "title": "Add book manually",
+      "bookTitle": "Title",
+      "author": "Author",
+      "isbn": "ISBN",
+      "publisher": "Publisher",
+      "year": "Year",
+      "noCategory": "No category",
+      "shelf": "Shelf",
+      "save": "Save book"
+    },
+
+    "errors": {
+      "INVALID_INPUT": "Please check the entered values.",
+      "INVALID_ISBN": "This ISBN is not valid.",
+      "TITLE_REQUIRED": "The title is required.",
+      "UNAUTHORIZED": "Please log in again.",
+      "REGISTER_FAILED": "Could not save. Try again.",
+      "NETWORK": "No connection. Try again."
+    }
+  },
+  "inventory": {
+    "title": "Inventory",
+    "count": "{count} titles",
+    "placeholder": "Search title, author or ISBN",
+    "scan": "Scan barcode",
+    "clear": "Clear",
+    "loading": "Loading…",
+    "empty": "No books found.",
+    "loadError": "Couldn't load the books.",
+    "retry": "Try again",
+    "columns": {
+      "cover": "Cover",
+      "title": "Title",
+      "publisher": "Publisher",
+      "year": "Year",
+      "language": "Language",
+      "isbn": "ISBN",
+      "category": "Category",
+      "shelf": "Shelf",
+      "stock": "Available / total"
+    }
+  }
+}

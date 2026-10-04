@@ -1,0 +1,142 @@
+{
+  "app": { "name": "Biblioteka e Shkollës" },
+  "nav": {
+    "dashboard": "Paneli",
+    "inventory": "Inventari",
+    "register": "Regjistro libra",
+    "loans": "Huazimet",
+    "students": "Nxënësit"
+  },
+  "language": { "label": "Gjuha" },
+  "dashboard": {
+    "title": "Paneli",
+    "subtitle": "Pasqyra e bibliotekës",
+    "stats": {
+      "titles": "Tituj",
+      "copies": "Kopje gjithsej",
+      "available": "Në dispozicion",
+      "onLoan": "Të huazuara",
+      "overdue": "Me vonesë"
+    },
+    "recentLoans": "Huazimet e fundit",
+    "byCategory": "Libra sipas kategorisë",
+    "columns": {
+      "student": "Nxënësi",
+      "book": "Libri",
+      "due": "Afati",
+      "status": "Statusi"
+    },
+    "status": { "onLoan": "Huazuar", "overdue": "Me vonesë" }
+  },
+  "auth": {
+    "login": {
+      "title": "Hyr",
+      "email": "Email",
+      "password": "Fjalëkalimi",
+      "submit": "Hyr"
+    },
+    "setPassword": {
+      "title": "Vendos fjalëkalimin",
+      "hint": "Të paktën 10 karaktere.",
+      "placeholder": "Fjalëkalimi i ri",
+      "submit": "Ruaj dhe vazhdo"
+    },
+    "errors": {
+      "invalid": "Email-i ose fjalëkalimi është i pasaktë.",
+      "invalid_link": "Kjo lidhje është e pavlefshme ose ka skaduar. Kërkoni një ftesë të re.",
+      "short": "Fjalëkalimi duhet të ketë të paktën 10 karaktere.",
+      "failed": "Fjalëkalimi nuk u ruajt. Provo përsëri."
+    },
+    "logout": "Dil"
+  },
+  "register": {
+    "title": "Regjistro libra",
+
+    "modeCash": "Një nga një",
+    "modeQty": "Me sasi",
+
+    "hintCash": "Çdo skanim shton menjëherë 1 kopje.",
+    "hintQty": "Çdo skanim pyet sa kopje.",
+
+    "placeholder": "ISBN, titull ose autor",
+    "search": "Kërko",
+    "scan": "Skano",
+    "closeCamera": "Mbyll kamerën",
+
+    "cameraError": "Kamera nuk është e disponueshme. Lejo qasjen në kamerë ose shkruaj manualisht.",
+
+    "searching": "Duke kërkuar…",
+    "invalidIsbn": "ISBN-ja nuk është e vlefshme. Kontrollo numrin.",
+
+    "notFoundIsbn": "ISBN {isbn} nuk u gjet.",
+    "notFoundText": "Nuk u gjet asnjë libër.",
+
+    "searchByTitle": "Kërko sipas titullit",
+    "addManually": "Shto manualisht",
+    "notInList": "Nuk është në listë? Shto manualisht",
+
+    "heldIsbn": "ISBN {isbn} do të ruhet me librin",
+    "inStock": "{count} në stok",
+    "fromCatalog": "Katalog",
+
+    "quantity": "Sa kopje?",
+    "accept": "Prano",
+    "cancel": "Anulo",
+
+    "added": "U shtuan {count} × {title}",
+
+    "sessionTitle": "Shtuar në këtë sesion",
+    "openSession": "Hap sesionin",
+    "close": "Mbyll",
+    "sessionEmpty": "Sesioni është bosh",
+
+    "source": {
+      "inventory": "Në inventar",
+      "catalog": "Nga katalogu",
+      "manual": "Manual"
+    },
+
+    "manual": {
+      "title": "Shto libër manualisht",
+      "bookTitle": "Titulli",
+      "author": "Autori",
+      "isbn": "ISBN",
+      "publisher": "Botuesi",
+      "year": "Viti",
+      "noCategory": "Pa kategori",
+      "shelf": "Rafti",
+      "save": "Ruaj librin"
+    },
+
+    "errors": {
+      "INVALID_INPUT": "Kontrollo vlerat e futura.",
+      "INVALID_ISBN": "ISBN-ja nuk është e vlefshme.",
+      "TITLE_REQUIRED": "Titulli është i detyrueshëm.",
+      "UNAUTHORIZED": "Hyr përsëri.",
+      "REGISTER_FAILED": "Nuk u ruajt. Provo përsëri.",
+      "NETWORK": "Nuk ka lidhje. Provo përsëri."
+    }
+  },
+  "inventory": {
+    "title": "Inventari",
+    "count": "{count} tituj",
+    "placeholder": "Kërko titull, autor ose ISBN",
+    "scan": "Skano barkodin",
+    "clear": "Pastro",
+    "loading": "Duke u ngarkuar…",
+    "empty": "Nuk u gjet asnjë libër.",
+    "loadError": "Librat nuk u ngarkuan.",
+    "retry": "Provo përsëri",
+    "columns": {
+      "cover": "Kopertina",
+      "title": "Titulli",
+      "publisher": "Botuesi",
+      "year": "Viti",
+      "language": "Gjuha",
+      "isbn": "ISBN",
+      "category": "Kategoria",
+      "shelf": "Rafti",
+      "stock": "Në dispozicion / gjithsej"
+    }
+  }
+}
