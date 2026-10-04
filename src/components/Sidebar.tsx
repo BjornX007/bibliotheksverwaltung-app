@@ -1,8 +1,9 @@
 // src/components/Sidebar.tsx
 "use client";
 
-import { useEffect } from "react";
-import Link from "next/link";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
+import { useFormStatus } from "react-dom";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -11,8 +12,10 @@ import {
   GraduationCap,
   LayoutDashboard,
   Library,
+  Loader2,
   LogOut,
   ScanLine,
+  type LucideIcon,
 } from "lucide-react";
 import { logout } from "../app/actions/auth";
 
@@ -23,6 +26,66 @@ const items = [
   { href: "/loans", key: "loans", icon: ArrowLeftRight },
   { href: "/students", key: "students", icon: GraduationCap },
 ] as const;
+
+/* Must be rendered inside a <Link>: shows a spinner while that link is loading. */
+function NavIcon({
+  icon: Icon,
+  className,
+}: {
+  icon: LucideIcon;
+  className: string;
+}) {
+  const { pending } = useLinkStatus();
+
+  return pending ? (
+    <Loader2 className={`${className} animate-spin`} aria-hidden />
+  ) : (
+    <Icon className={className} aria-hidden />
+  );
+}
+
+/* Must be rendered inside the logout <form>. */
+function LogoutButton({
+  label,
+  compact = false,
+}: {
+  label: string;
+  compact?: boolean;
+}) {
+  const { pending } = useFormStatus();
+  const Icon = pending ? Loader2 : LogOut;
+  const icon = (
+    <Icon
+      className={`h-4 w-4 ${pending ? "animate-spin" : ""}`}
+      aria-hidden
+    />
+  );
+
+  if (compact) {
+    return (
+      <button
+        type="submit"
+        disabled={pending}
+        aria-label={label}
+        className="rounded-lg border border-slate-300 p-2 text-slate-600 active:bg-slate-100 disabled:opacity-60"
+        style={{ touchAction: "manipulation" }}
+      >
+        {icon}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 active:bg-slate-200 disabled:opacity-60"
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
 
 function LocaleSwitch({
   locale,
@@ -48,6 +111,7 @@ function LocaleSwitch({
               ? "bg-white text-slate-900 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
           }`}
+          style={{ touchAction: "manipulation" }}
         >
           {l}
         </button>
@@ -76,6 +140,17 @@ export default function Sidebar() {
   const router = useRouter();
   const locale = useLocale();
 
+  // highlight the tapped tab immediately, not after the new page has loaded
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  // language buttons switch instantly while the page refreshes in the background
+  const [, startTransition] = useTransition();
+  const [shownLocale, setShownLocale] = useOptimistic(locale);
+
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
+
   // Back button after logout: a page restored from the browser cache reloads,
   // and the proxy then sends the visitor to the login page.
   useEffect(() => {
@@ -92,11 +167,17 @@ export default function Sidebar() {
 
   function changeLocale(next: string) {
     document.cookie = `locale=${next}; path=/; max-age=31536000; samesite=lax`;
-    router.refresh();
+
+    startTransition(() => {
+      setShownLocale(next);
+      router.refresh();
+    });
   }
 
+  const current = pendingHref ?? pathname;
+
   function isActive(href: string) {
-    return href === "/" ? pathname === "/" : pathname.startsWith(href);
+    return href === "/" ? current === "/" : current.startsWith(href);
   }
 
   return (
@@ -106,17 +187,10 @@ export default function Sidebar() {
         <Logo name={app("name")} />
 
         <div className="flex items-center gap-2">
-          <LocaleSwitch locale={locale} onChange={changeLocale} />
+          <LocaleSwitch locale={shownLocale} onChange={changeLocale} />
 
           <form action={logout}>
-            <button
-              type="submit"
-              aria-label={auth("logout")}
-              className="rounded-lg border border-slate-300 p-2 text-slate-600 active:bg-slate-100"
-              style={{ touchAction: "manipulation" }}
-            >
-              <LogOut className="h-4 w-4" aria-hidden />
-            </button>
+            <LogoutButton label={auth("logout")} compact />
           </form>
         </div>
       </header>
@@ -128,21 +202,23 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 px-3">
-          {items.map(({ href, key, icon: Icon }) => {
+          {items.map(({ href, key, icon }) => {
             const active = isActive(href);
 
             return (
               <Link
                 key={key}
                 href={href}
+                onClick={() => setPendingHref(href)}
                 aria-current={active ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
                   active
                     ? "bg-blue-50 text-blue-700"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200"
                 }`}
+                style={{ touchAction: "manipulation" }}
               >
-                <Icon className="h-5 w-5 shrink-0" aria-hidden />
+                <NavIcon icon={icon} className="h-5 w-5 shrink-0" />
                 {t(key)}
               </Link>
             );
@@ -152,17 +228,11 @@ export default function Sidebar() {
         <div className="space-y-3 border-t border-slate-200 p-4">
           <div className="space-y-1.5">
             <div className="text-xs text-slate-500">{lang("label")}</div>
-            <LocaleSwitch locale={locale} onChange={changeLocale} />
+            <LocaleSwitch locale={shownLocale} onChange={changeLocale} />
           </div>
 
           <form action={logout}>
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              <LogOut className="h-4 w-4" aria-hidden />
-              {auth("logout")}
-            </button>
+            <LogoutButton label={auth("logout")} />
           </form>
         </div>
       </aside>
@@ -173,15 +243,16 @@ export default function Sidebar() {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="grid grid-cols-5">
-          {items.map(({ href, key, icon: Icon }) => {
+          {items.map(({ href, key, icon }) => {
             const active = isActive(href);
 
             return (
               <li key={key}>
                 <Link
                   href={href}
+                  onClick={() => setPendingHref(href)}
                   aria-current={active ? "page" : undefined}
-                  className={`flex flex-col items-center gap-0.5 px-1 py-2 text-[11px] font-medium ${
+                  className={`flex flex-col items-center gap-0.5 px-1 py-2 text-[11px] font-medium active:bg-slate-50 ${
                     active ? "text-blue-700" : "text-slate-500"
                   }`}
                   style={{ touchAction: "manipulation" }}
@@ -191,7 +262,7 @@ export default function Sidebar() {
                       active ? "bg-blue-50" : ""
                     }`}
                   >
-                    <Icon className="h-5 w-5" aria-hidden />
+                    <NavIcon icon={icon} className="h-5 w-5" />
                   </span>
 
                   <span className="max-w-full truncate">{t(key)}</span>

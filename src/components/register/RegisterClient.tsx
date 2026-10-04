@@ -992,7 +992,7 @@ export default function RegisterClient({
           <form
             onClick={(e) => e.stopPropagation()}
             onSubmit={acceptQty}
-            className="w-full space-y-4 rounded-t-2xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:max-w-sm sm:rounded-2xl"
+            className="w-full space-y-4 rounded-t-2xl bg-white p-5 pb-[max(5.25rem,env(safe-area-inset-bottom))] sm:max-w-sm sm:rounded-2xl"
           >
             <div className="flex gap-3">
               <Cover
@@ -1060,7 +1060,7 @@ export default function RegisterClient({
           <form
             onClick={(e) => e.stopPropagation()}
             onSubmit={saveManual}
-            className="max-h-[92vh] w-full space-y-3 overflow-y-auto rounded-t-2xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:max-w-md sm:rounded-2xl"
+            className="max-h-[92vh] w-full space-y-3 overflow-y-auto rounded-t-2xl bg-white p-5 pb-[max(5.25rem,env(safe-area-inset-bottom))] sm:max-w-md sm:rounded-2xl"
           >
             <h2 className="font-semibold">{t("manual.title")}</h2>
 
