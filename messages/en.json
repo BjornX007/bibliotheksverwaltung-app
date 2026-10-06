@@ -138,5 +138,36 @@
       "shelf": "Shelf",
       "stock": "Available / total"
     }
+  },
+ "loans": {
+    "stepBook": "Book",
+    "stepStudent": "Student",
+    "stepDue": "Due date",
+    "searchPlaceholder": "Search by title, author, or ISBN",
+    "scan": "Scan barcode",
+    "clear": "Clear",
+    "searching": "Searching...",
+    "noBooks": "No books found",
+    "available": "{available}/{total} available",
+    "unavailable": "Unavailable",
+    "noCopies": "No copies are currently available.",
+    "change": "Change",
+    "studentName": "Student name",
+    "studentClass": "Class",
+    "studentPhone": "Phone",
+    "savedStudent": "Existing student",
+    "newStudent": "New student",
+    "dueDate": "Due date",
+    "days": "{count, plural, =1 {# day} other {# days}}",
+    "saving": "Saving...",
+    "submit": "Create loan",
+    "success": "Loan created for {student}: {title}.",
+    "errors": {
+      "INVALID_INPUT": "Please check the information you entered.",
+      "NO_COPIES": "No copies are available.",
+      "ALREADY_LOANED": "This book is already loaned.",
+      "UNAUTHORIZED": "You are not authorized.",
+      "LOAN_FAILED": "The loan could not be created.",
+      "NETWORK": "A network error occurred."}
   }
 }

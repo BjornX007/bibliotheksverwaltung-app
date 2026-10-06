@@ -138,5 +138,37 @@
       "shelf": "Rafti",
       "stock": "Në dispozicion / gjithsej"
     }
+  },
+  "loans": {
+    "stepBook": "Libri",
+    "stepStudent": "Nxënësi",
+    "stepDue": "Afati i kthimit",
+    "searchPlaceholder": "Kërko sipas titullit, autorit ose ISBN-së",
+    "scan": "Skano barkodin",
+    "clear": "Pastro",
+    "searching": "Duke kërkuar...",
+    "noBooks": "Nuk u gjet asnjë libër",
+    "available": "{available}/{total} të disponueshëm",
+    "unavailable": "I padisponueshëm",
+    "noCopies": "Aktualisht nuk ka kopje të disponueshme.",
+    "change": "Ndrysho",
+    "studentName": "Emri i nxënësit",
+    "studentClass": "Klasa",
+    "studentPhone": "Telefoni i nxënësit",
+    "savedStudent": "Nxënës ekzistues",
+    "newStudent": "Nxënës i ri",
+    "dueDate": "Data e kthimit",
+    "days": "{count, plural, =1 {# ditë} other {# ditë}}",
+    "saving": "Duke ruajtur...",
+    "submit": "Krijo huazimin",
+    "success": "Huazimi u krijua për {student}: {title}.",
+    "errors": {
+      "INVALID_INPUT": "Ju lutemi kontrolloni të dhënat e vendosura.",
+      "NO_COPIES": "Nuk ka kopje të disponueshme.",
+      "ALREADY_LOANED": "Ky libër është tashmë i huazuar.",
+      "UNAUTHORIZED": "Nuk jeni i autorizuar.",
+      "LOAN_FAILED": "Huazimi nuk mund të krijohej.",
+      "NETWORK": "Ndodhi një gabim në rrjet."
+    }
   }
 }

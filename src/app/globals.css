@@ -1,10 +1,89 @@
+/* src/app/globals.css */
 @import "tailwindcss";
 
 :root {
   color-scheme: light;
 }
 
+html {
+  touch-action: manipulation; /* no double-tap zoom, pinch zoom still works */
+  -webkit-text-size-adjust: 100%;
+  overflow-x: clip; /* no sideways wobble */
+}
+
 body {
   background: #f1f5f9;
   color: #1e293b;
+  overflow-x: clip;
+  overscroll-behavior-y: none; /* no rubber-band bounce or pull-to-refresh */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* app-like: the interface can't be selected, text fields and data can */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable],
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* no long-press preview menu on links and images, no dragging them */
+a,
+img,
+button {
+  -webkit-touch-callout: none;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+/* focus ring only for keyboard users, not after a tap */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* every tappable thing reacts at once */
+button:not(:disabled),
+nav a {
+  transition:
+    scale 80ms ease,
+    background-color 120ms ease;
+}
+
+button:not(:disabled):active,
+nav a:active {
+  scale: 0.97;
+}
+
+/* phones and tablets: hide scrollbars like a native app */
+@media (pointer: coarse) {
+  * {
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled),
+  nav a {
+    transition: none;
+  }
+
+  button:not(:disabled):active,
+  nav a:active {
+    scale: 1;
+  }
 }
