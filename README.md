@@ -22,9 +22,6 @@ Eine Web-App zur Verwaltung des Buchbestands einer Schulbibliothek. Neue Bücher
 6. [Mehrsprachigkeit](#mehrsprachigkeit)
 7. [Authentifizierung und Sicherheit](#authentifizierung-und-sicherheit)
 8. [Als App auf dem Handy (PWA)](#als-app-auf-dem-handy-pwa)
-9. [Installation und lokaler Start](#installation-und-lokaler-start)
-10. [Deployment](#deployment)
-11. [Geplante Erweiterungen](#geplante-erweiterungen)
 
 ---
 
