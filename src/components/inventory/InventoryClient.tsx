@@ -1,9 +1,17 @@
-// src/components/inventory/InventoryClient.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { AlertCircle, Camera, Loader2, Search, X } from "lucide-react";
+import {
+  AlertCircle,
+  Camera,
+  Loader2,
+  Minus,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import BarcodeScanner from "@/components/register/BarcodeScanner";
 import BookCover from "./BookCover";
 
@@ -33,16 +41,61 @@ const primary =
 const secondary =
   "rounded-lg border border-slate-300 bg-white px-4 py-3 font-medium disabled:opacity-50";
 
-function Stock({ available, total }: { available: number; total: number }) {
+const danger =
+  "rounded-lg bg-red-600 px-4 py-3 font-medium text-white disabled:opacity-50";
+
+const stepBtn =
+  "rounded-md border border-slate-300 bg-white p-1.5 text-slate-700 active:bg-slate-100 disabled:opacity-40";
+
+const trashBtn =
+  "rounded-md p-1.5 text-red-600 active:bg-red-50 disabled:opacity-40";
+
+function Stock({
+  book,
+  busy,
+  onAdjust,
+  decreaseLabel,
+  increaseLabel,
+}: {
+  book: Book;
+  busy: boolean;
+  onAdjust: (book: Book, delta: 1 | -1) => void;
+  decreaseLabel: string;
+  increaseLabel: string;
+}) {
   return (
-    <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${
-        available === 0
-          ? "bg-red-100 text-red-700"
-          : "bg-green-100 text-green-700"
-      }`}
-    >
-      {available} / {total}
+    <span className="inline-flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => onAdjust(book, -1)}
+        disabled={busy || book.qty_available <= 0}
+        aria-label={decreaseLabel}
+        className={stepBtn}
+        style={{ touchAction: "manipulation" }}
+      >
+        <Minus className="h-4 w-4" aria-hidden />
+      </button>
+
+      <span
+        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${
+          book.qty_available === 0
+            ? "bg-red-100 text-red-700"
+            : "bg-green-100 text-green-700"
+        }`}
+      >
+        {book.qty_available} / {book.qty_total}
+      </span>
+
+      <button
+        type="button"
+        onClick={() => onAdjust(book, 1)}
+        disabled={busy}
+        aria-label={increaseLabel}
+        className={stepBtn}
+        style={{ touchAction: "manipulation" }}
+      >
+        <Plus className="h-4 w-4" aria-hidden />
+      </button>
     </span>
   );
 }
@@ -63,6 +116,13 @@ export default function InventoryClient() {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  // edit / delete
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmBook, setConfirmBook] = useState<Book | null>(null);
+  const [actionError, setActionError] = useState<
+    "actionError" | "hasLoans" | "conflict" | null
+  >(null);
 
   function categoryName(book: Book) {
     if (!book.category) return null;
@@ -115,6 +175,98 @@ export default function InventoryClient() {
     }
   }
 
+  function errorKey(code: unknown): "actionError" | "hasLoans" | "conflict" {
+    if (code === "HAS_LOANS" || code === "NO_AVAILABLE_COPY") return "hasLoans";
+    if (code === "CONFLICT") return "conflict";
+    return "actionError";
+  }
+
+  // +1 / -1 copy
+  async function adjust(book: Book, delta: 1 | -1) {
+    if (busyId) return;
+
+    setBusyId(book.id);
+    setActionError(null);
+
+    try {
+      const res = await fetch(`/api/inventory/${book.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ delta }),
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        console.error("INVENTORY ADJUST FAILED:", json);
+        setActionError(errorKey(json.error));
+        return;
+      }
+
+      setBooks((current) =>
+        current.map((b) =>
+          b.id === book.id
+            ? {
+                ...b,
+                qty_total: json.qty_total,
+                qty_available: json.qty_available,
+              }
+            : b,
+        ),
+      );
+    } catch (err) {
+      console.error("INVENTORY ADJUST NETWORK ERROR:", err);
+      setActionError("actionError");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // delete after confirmation
+  async function confirmDelete() {
+    const book = confirmBook;
+
+    if (!book || busyId) return;
+
+    setBusyId(book.id);
+    setActionError(null);
+
+    try {
+      const res = await fetch(`/api/inventory/${book.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+
+        console.error("INVENTORY DELETE FAILED:", json);
+        setActionError(errorKey(json.error));
+        return;
+      }
+
+      setBooks((current) => current.filter((b) => b.id !== book.id));
+      setTotal((current) =>
+        current === null ? current : Math.max(0, current - 1),
+      );
+    } catch (err) {
+      console.error("INVENTORY DELETE NETWORK ERROR:", err);
+      setActionError("actionError");
+    } finally {
+      setBusyId(null);
+      setConfirmBook(null);
+    }
+  }
+
   // typing: apply the search after a short pause
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -154,17 +306,60 @@ export default function InventoryClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, loading, error, books.length, activeQuery]);
 
+  // close the dialog with Escape
+  useEffect(() => {
+    if (!confirmBook) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busyId) setConfirmBook(null);
+    };
+
+    window.addEventListener("keydown", onKey);
+
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmBook, busyId]);
+
   // apply a search immediately (submit, scan, clear)
   function apply(value: string) {
     setQuery(value);
     setActiveQuery(value.trim());
   }
 
-  function onScan(code: string) {
-    const clean = code.replace(/[\s-]/g, "").trim().toUpperCase();
+function onScan(code: string) {
+  const clean = code.replace(/[\s-]/g, "").trim().toUpperCase();
 
-    apply(clean);
-    setCamera(false);
+  // the camera stays open (and fixed) so the next book can be scanned right away
+  apply(clean);
+}
+
+  function stock(book: Book) {
+    return (
+      <Stock
+        book={book}
+        busy={busyId === book.id}
+        onAdjust={adjust}
+        decreaseLabel={t("decrease")}
+        increaseLabel={t("increase")}
+      />
+    );
+  }
+
+  function deleteButton(book: Book) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setActionError(null);
+          setConfirmBook(book);
+        }}
+        disabled={busyId === book.id}
+        aria-label={t("delete")}
+        className={trashBtn}
+        style={{ touchAction: "manipulation" }}
+      >
+        <Trash2 className="h-5 w-5" aria-hidden />
+      </button>
+    );
   }
 
   return (
@@ -179,66 +374,89 @@ export default function InventoryClient() {
         )}
       </div>
 
-      {/* search */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          apply(query);
-        }}
-        className="sticky top-0 z-30 -mx-4 flex gap-2 bg-white/95 px-4 py-2 backdrop-blur"
-      >
-        <div className="relative min-w-0 flex-1">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-            aria-hidden
-          />
+      {/* search + camera: stay fixed at the top while the list scrolls */}
+<div className="sticky top-0 z-30 -mx-4 space-y-2 bg-white/95 px-4 py-2 backdrop-blur">
+  <form
+    onSubmit={(e) => {
+      e.preventDefault();
+      apply(query);
+    }}
+    className="flex gap-2"
+  >
+    <div className="relative min-w-0 flex-1">
+      <Search
+        className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+        aria-hidden
+      />
 
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            inputMode="search"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="none"
-            spellCheck={false}
-            placeholder={t("placeholder")}
-            className={`${input} pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden`}
-          />
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        inputMode="search"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        placeholder={t("placeholder")}
+        className={`${input} pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden`}
+      />
 
-          {query && (
-            <button
-              type="button"
-              onClick={() => apply("")}
-              aria-label={t("clear")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-slate-400 active:bg-slate-100"
-              style={{ touchAction: "manipulation" }}
-            >
-              <X className="h-4 w-4" aria-hidden />
-            </button>
-          )}
-        </div>
-
+      {query && (
         <button
           type="button"
-          onClick={() => setCamera((current) => !current)}
-          aria-label={t("scan")}
-          aria-pressed={camera}
-          className={`${camera ? primary : secondary} shrink-0`}
+          onClick={() => apply("")}
+          aria-label={t("clear")}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-slate-400 active:bg-slate-100"
           style={{ touchAction: "manipulation" }}
         >
-          <Camera className="h-5 w-5" aria-hidden />
+          <X className="h-4 w-4" aria-hidden />
         </button>
-      </form>
+      )}
+    </div>
 
-      {/* camera */}
-      {camera && (
-        <div className="overflow-hidden rounded-xl">
-          <BarcodeScanner
-            paused={loading}
-            onScan={onScan}
-            onClose={() => setCamera(false)}
-          />
+    <button
+      type="button"
+      onClick={() => setCamera((current) => !current)}
+      aria-label={t("scan")}
+      aria-pressed={camera}
+      className={`${camera ? primary : secondary} shrink-0`}
+      style={{ touchAction: "manipulation" }}
+    >
+      <Camera className="h-5 w-5" aria-hidden />
+    </button>
+  </form>
+
+  {camera && (
+    <div className="overflow-hidden rounded-xl">
+      <BarcodeScanner
+        compact
+        paused={loading}
+        onScan={onScan}
+        onClose={() => setCamera(false)}
+      />
+    </div>
+  )}
+</div>
+      {/* action error */}
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+        >
+          <span className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+            {t(actionError)}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            aria-label={t("clear")}
+            className="rounded p-1 text-red-700 active:bg-red-100"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
         </div>
       )}
 
@@ -259,6 +477,7 @@ export default function InventoryClient() {
                 <th className="p-3 text-right font-medium">
                   {t("columns.stock")}
                 </th>
+                <th className="w-12 p-3" aria-hidden />
               </tr>
             </thead>
 
@@ -293,12 +512,8 @@ export default function InventoryClient() {
                   <td className="p-3">{categoryName(book) ?? "—"}</td>
                   <td className="p-3">{book.shelf ?? "—"}</td>
 
-                  <td className="p-3 text-right">
-                    <Stock
-                      available={book.qty_available}
-                      total={book.qty_total}
-                    />
-                  </td>
+                  <td className="p-3 text-right">{stock(book)}</td>
+                  <td className="p-3 text-right">{deleteButton(book)}</td>
                 </tr>
               ))}
             </tbody>
@@ -354,11 +569,9 @@ export default function InventoryClient() {
                     .join(" · ")}
                 </div>
 
-                <div className="mt-auto pt-2">
-                  <Stock
-                    available={book.qty_available}
-                    total={book.qty_total}
-                  />
+                <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+                  {stock(book)}
+                  {deleteButton(book)}
                 </div>
               </div>
             </li>
@@ -398,6 +611,54 @@ export default function InventoryClient() {
       )}
 
       <div ref={sentinelRef} className="h-px" />
+
+      {/* delete confirmation */}
+      {confirmBook && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !busyId && setConfirmBook(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-title"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm space-y-4 rounded-xl bg-white p-5 shadow-xl"
+          >
+            <h2 id="delete-title" className="text-lg font-semibold">
+              {t("deleteTitle")}
+            </h2>
+
+            <p className="text-sm text-slate-600">
+              {t("deleteBody", { title: confirmBook.title })}
+            </p>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmBook(null)}
+                disabled={!!busyId}
+                className={secondary}
+              >
+                {t("cancel")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void confirmDelete()}
+                disabled={!!busyId}
+                className={danger}
+              >
+                {busyId ? (
+                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                ) : (
+                  t("confirmDelete")
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

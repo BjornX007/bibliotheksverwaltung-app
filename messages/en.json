@@ -26,7 +26,7 @@
       "due": "Due date",
       "status": "Status"
     },
-    "status": { "onLoan": "On loan", "overdue": "Overdue" }
+    "status": { "onLoan": "On loan", "overdue": "Overdue", "returned": "Returned" }
   },
   "auth": {
     "login": {
@@ -118,26 +118,37 @@
     }
   },
   "inventory": {
-    "title": "Inventory",
-    "count": "{count} titles",
-    "placeholder": "Search title, author or ISBN",
-    "scan": "Scan barcode",
-    "clear": "Clear",
-    "loading": "Loading…",
-    "empty": "No books found.",
-    "loadError": "Couldn't load the books.",
-    "retry": "Try again",
-    "columns": {
-      "cover": "Cover",
-      "title": "Title",
-      "publisher": "Publisher",
-      "year": "Year",
-      "language": "Language",
-      "isbn": "ISBN",
-      "category": "Category",
-      "shelf": "Shelf",
-      "stock": "Available / total"
-    }
+  "title": "Inventory",
+  "count": "{count} titles",
+  "placeholder": "Search title, author or ISBN",
+  "scan": "Scan barcode",
+  "clear": "Clear",
+  "loading": "Loading…",
+  "empty": "No books found.",
+  "loadError": "Couldn't load the books.",
+  "retry": "Try again",
+  "columns": {
+    "cover": "Cover",
+    "title": "Title",
+    "publisher": "Publisher",
+    "year": "Year",
+    "language": "Language",
+    "isbn": "ISBN",
+    "category": "Category",
+    "shelf": "Shelf",
+    "stock": "Available / total"
+  },
+  "delete": "Delete",
+  "deleteTitle": "Delete book?",
+  "deleteBody": "\"{title}\" will be permanently deleted.",
+  "confirmDelete": "Delete",
+  "cancel": "Cancel",
+  "increase": "Add copy",
+  "decrease": "Remove copy",
+  "actionError": "Action failed. Please try again.",
+  "hasLoans": "Not possible while copies are on loan.",
+  "conflict": "The book was changed elsewhere. Please retry."
+
   },
  "loans": {
     "stepBook": "Book",
@@ -169,5 +180,42 @@
       "UNAUTHORIZED": "You are not authorized.",
       "LOAN_FAILED": "The loan could not be created.",
       "NETWORK": "A network error occurred."}
+  },
+
+ "loans": {
+  "title": "Loans",
+  "subtitle": "Manage currently borrowed books.",
+  "newLoan": "New loan",
+  "signInRequired": "You must be signed in to view loans.",
+  "loadError": "Failed to load loans.",
+  "searchPlaceholder": "Search student or book",
+  "clear": "Clear",
+  "markReturned": "Mark returned",
+  "actionError": "Action failed. Please try again.",
+  "empty": "No loans yet.",
+  "noResults": "No matching loans.",
+  "confirmReturnTitle": "Mark as returned?",
+  "confirmReturnBody": "\"{book}\" borrowed by {student} will be marked as returned.",
+  "confirm": "Confirm",
+  "cancel": "Cancel",
+  "stats": {
+    "total": "Total",
+    "active": "Active",
+    "overdue": "Overdue",
+    "returned": "Returned"
+  },
+  "status": {
+    "active": "Active",
+    "overdue": "Overdue",
+    "returned": "Returned"
+  },
+  "columns": {
+    "student": "Student",
+    "class": "Class",
+    "book": "Book",
+    "loaned": "Loaned",
+    "due": "Due",
+    "status": "Status",
+    "actions": "Actions"
   }
-}
+}}

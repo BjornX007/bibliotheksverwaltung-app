@@ -21,6 +21,7 @@ type Category = {
   name_en: string;
 };
 
+
 type Source = "inventory" | "catalog" | "manual";
 
 type Item = {
@@ -588,89 +589,91 @@ export default function RegisterClient({
         </p>
       </div>
 
-      {/* search */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
+    {/* search + camera: stay fixed at the top while the results scroll */}
+<div className="sticky top-0 z-30 -mx-4 space-y-2 bg-white/95 px-4 py-2 backdrop-blur">
+  <form
+    onSubmit={(e) => {
+      e.preventDefault();
 
-          const q = query.trim();
+      const q = query.trim();
 
-          if (q) {
-            void lookup(q);
-          }
-        }}
-        className="relative z-20 flex gap-2"
-        style={{
-          pointerEvents: "auto",
-          touchAction: "manipulation",
-        }}
-      >
-        <input
-          ref={inputRef}
-          type="search"
-          value={query}
-          onChange={(e) => {
-            const value = e.target.value;
+      if (q) {
+        void lookup(q);
+      }
+    }}
+    className="flex gap-2"
+    style={{
+      pointerEvents: "auto",
+      touchAction: "manipulation",
+    }}
+  >
+    <input
+      ref={inputRef}
+      type="search"
+      value={query}
+      onChange={(e) => {
+        const value = e.target.value;
 
-            setQuery(value);
+        setQuery(value);
 
-            if (!value.trim()) {
-              setItems([]);
-              setSearched(false);
-              setInvalidIsbn(false);
-              setHeldIsbn(null);
-            }
-          }}
-          inputMode="search"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="none"
-          spellCheck={false}
-          placeholder={t("placeholder")}
-          className={`${input} min-w-0 flex-1`}
-          style={{
-            pointerEvents: "auto",
-            touchAction: "manipulation",
-          }}
-        />
+        if (!value.trim()) {
+          setItems([]);
+          setSearched(false);
+          setInvalidIsbn(false);
+          setHeldIsbn(null);
+        }
+      }}
+      inputMode="search"
+      autoComplete="off"
+      autoCorrect="off"
+      autoCapitalize="none"
+      spellCheck={false}
+      placeholder={t("placeholder")}
+      className={`${input} min-w-0 flex-1`}
+      style={{
+        pointerEvents: "auto",
+        touchAction: "manipulation",
+      }}
+    />
 
-        <button
-          type="submit"
-          className={`${secondary} shrink-0`}
-          aria-label={t("search")}
-          style={{
-            pointerEvents: "auto",
-            touchAction: "manipulation",
-          }}
-        >
-          <Search className="h-5 w-5" aria-hidden />
-        </button>
+    <button
+      type="submit"
+      className={`${secondary} shrink-0`}
+      aria-label={t("search")}
+      style={{
+        pointerEvents: "auto",
+        touchAction: "manipulation",
+      }}
+    >
+      <Search className="h-5 w-5" aria-hidden />
+    </button>
 
-        <button
-          type="button"
-          onClick={() => setCamera((current) => !current)}
-          aria-label={t("scan")}
-          aria-pressed={camera}
-          className={`${camera ? primary : secondary} shrink-0`}
-          style={{
-            pointerEvents: "auto",
-            touchAction: "manipulation",
-          }}
-        >
-          <Camera className="h-5 w-5" aria-hidden />
-        </button>
-      </form>
+    <button
+      type="button"
+      onClick={() => setCamera((current) => !current)}
+      aria-label={t("scan")}
+      aria-pressed={camera}
+      className={`${camera ? primary : secondary} shrink-0`}
+      style={{
+        pointerEvents: "auto",
+        touchAction: "manipulation",
+      }}
+    >
+      <Camera className="h-5 w-5" aria-hidden />
+    </button>
+  </form>
 
-      {/* camera */}
-      {camera && (
-        <div className="relative z-30 overflow-hidden rounded-xl">
-          <BarcodeScanner
-            paused={!!pending || !!manual || saving || loading}
-            onScan={onScan}
-            onClose={() => setCamera(false)}
-          />
-        </div>
-      )}
+  {camera && (
+    <div className="overflow-hidden rounded-xl">
+      <BarcodeScanner
+        compact
+        paused={!!pending || !!manual || saving || loading}
+        onScan={onScan}
+        onClose={() => setCamera(false)}
+      />
+    </div>
+  )}
+</div>
 
       {/* last scanned: compact register-style preview, sits under the camera */}
       {last && (
