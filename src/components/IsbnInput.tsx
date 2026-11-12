@@ -81,10 +81,9 @@ export default function IsbnInput({
       {scanning && (
         <div className="mt-2 overflow-hidden rounded-xl">
           <BarcodeScanner
-            compact
-            onScan={onScan}
-            onClose={() => setScanning(false)}
-          />
+                      compact
+                      onScan={onScan}
+                      onClose={() => setScanning(false)} paused={false}          />
         </div>
       )}
     </div>
