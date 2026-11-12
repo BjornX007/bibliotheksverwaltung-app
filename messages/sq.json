@@ -133,6 +133,11 @@
       "shelf": "Rafti",
       "stock": "Të disponueshme / gjithsej"
     },
+    "author": "Autori",
+    "noCategory": "Pa kategori",
+    "edit": "Ndrysho",
+    "editTitle": "Ndrysho librin",
+    "save": "Ruaj",
     "delete": "Fshij",
     "deleteTitle": "Të fshihet libri?",
     "deleteBody": "\"{title}\" do të fshihet përgjithmonë.",
@@ -142,7 +147,19 @@
     "decrease": "Hiq kopje",
     "actionError": "Veprimi dështoi. Provo përsëri.",
     "hasLoans": "Nuk lejohet ndërsa kopjet janë të huazuara.",
-    "conflict": "Libri u ndryshua diku tjetër. Provo përsëri."
+    "conflict": "Libri u ndryshua diku tjetër. Provo përsëri.",
+    "invalidIsbn": "ISBN i pavlefshëm.",
+    "titleRequired": "Titulli është i detyrueshëm.",
+    "duplicateIsbn": "Ky ISBN ekziston tashmë.",
+    "cover": {
+      "choose": "Zgjidh foto",
+      "replace": "Ndrysho foton",
+      "remove": "Hiq foton",
+      "uploading": "Po ngarkohet…",
+      "wrongType": "Zgjidh një skedar imazhi.",
+      "tooBig": "Fotoja është shumë e madhe.",
+      "failed": "Ngarkimi dështoi. Provo përsëri."
+    }
   },
   "loans": {
     "stepBook": "Libri",

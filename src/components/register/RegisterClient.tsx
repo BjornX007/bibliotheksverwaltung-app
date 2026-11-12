@@ -14,7 +14,15 @@ import {
   X,
 } from "lucide-react";
 import BarcodeScanner from "./BarcodeScanner";
+import ImageUpload, {
+  emptyImageDraft,
+  removeUploadedImage,
+  resolveImageDraft,
+  type ImageDraft,
+} from "@/components/ImageUpload";
 
+// must match the bucket from sql/book-covers-storage.sql
+const COVER_BUCKET = "book-covers";
 type Category = {
   id: string;
   name_sq: string;
@@ -68,6 +76,7 @@ type Draft = {
   categoryId: string;
   shelf: string;
   qty: string;
+  cover: ImageDraft;
 };
 
 const KNOWN_ERRORS = [
@@ -159,6 +168,7 @@ export default function RegisterClient({
   categories: Category[];
 }) {
   const t = useTranslations("register");
+  const tInv = useTranslations("inventory");
   const locale = useLocale();
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -169,7 +179,7 @@ export default function RegisterClient({
   const [items, setItems] = useState<Item[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
-
+const [coverBusy, setCoverBusy] = useState(false);
   const [camera, setCamera] = useState(false);
 
   const [heldIsbn, setHeldIsbn] = useState<string | null>(null);
@@ -246,99 +256,116 @@ export default function RegisterClient({
   }
 
   async function submit(
-    body: Record<string, unknown>,
-    meta: Meta,
-    key: string,
-    count: number,
-    method: "manual" | "scan" | "catalog" | "inventory",
-  ) {
-    if (saving) return;
+  body: Record<string, unknown>,
+  meta: Meta,
+  key: string,
+  count: number,
+  method: "manual" | "scan" | "catalog" | "inventory",
+): Promise<boolean> {
+  if (saving) return false;
 
-    const startedAt = registrationStartedAt.current ?? Date.now();
-    const startedAtIso = new Date(startedAt).toISOString();
-    registrationStartedAt.current = startedAt;
+  const startedAt = registrationStartedAt.current ?? Date.now();
+  const startedAtIso = new Date(startedAt).toISOString();
 
-    setSaving(true);
+  registrationStartedAt.current = startedAt;
 
-    try {
-      const res = await fetch("/api/register/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...body,
-          qty: count,
-          method,
-          startedAt: startedAtIso,
-        }),
-      });
+  setSaving(true);
 
-      if (res.status === 401) {
-        window.location.href = "/login";
-        return;
-      }
+  try {
+    const res = await fetch("/api/register/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...body,
+        qty: count,
+        method,
+        startedAt: startedAtIso,
+      }),
+    });
 
-      const json = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      window.location.href = "/login";
+      return false;
+    }
 
-      if (!res.ok) {
-        console.error("REGISTER FAILED:", json);
-        setToast({
-          ok: false,
-          text: errorText(json.error),
-        });
-        return;
-      }
+    const json = await res.json().catch(() => ({}));
 
-      // newest / most recently touched entry goes to the top
-      setLog((current) => {
-        const previous = current.find((entry) => entry.key === key);
-        const rest = current.filter((entry) => entry.key !== key);
-
-        return [
-          {
-            ...(previous ?? meta),
-            key,
-            count: (previous?.count ?? 0) + count,
-            at: Date.now(),
-          },
-          ...rest,
-        ];
-      });
-
-      setLast({ ...meta, key, added: count });
-
-      setToast({
-        ok: true,
-        text: t("added", {
-          title: meta.title,
-          count,
-        }),
-      });
-
-      setHeldIsbn(null);
-      setPending(null);
-      setManual(null);
-      registrationStartedAt.current = null;
-      registrationMethod.current = "catalog";
-
-      clearSearch();
-
-      window.setTimeout(() => {
-        focusInput();
-      }, 50);
-    } catch (error) {
-      console.error("REGISTER NETWORK ERROR:", error);
-      registrationStartedAt.current = null;
+    if (!res.ok) {
+      console.error("REGISTER FAILED:", json);
 
       setToast({
         ok: false,
-        text: t("errors.NETWORK"),
+        text: errorText(json.error),
       });
-    } finally {
-      setSaving(false);
+
+      return false;
     }
+
+    setLog((current) => {
+      const previous = current.find(
+        (entry) => entry.key === key,
+      );
+
+      const rest = current.filter(
+        (entry) => entry.key !== key,
+      );
+
+      return [
+        {
+          ...(previous ?? meta),
+          key,
+          count: (previous?.count ?? 0) + count,
+          at: Date.now(),
+        },
+        ...rest,
+      ];
+    });
+
+    setLast({
+      ...meta,
+      key,
+      added: count,
+    });
+
+    setToast({
+      ok: true,
+      text: t("added", {
+        title: meta.title,
+        count,
+      }),
+    });
+
+    setHeldIsbn(null);
+    setPending(null);
+    setManual(null);
+
+    registrationStartedAt.current = null;
+    registrationMethod.current = "catalog";
+
+    clearSearch();
+
+    window.setTimeout(() => {
+      focusInput();
+    }, 50);
+
+    return true;
+  } catch (error) {
+    console.error("REGISTER NETWORK ERROR:", error);
+
+    registrationStartedAt.current = null;
+
+    setToast({
+      ok: false,
+      text: t("errors.NETWORK"),
+    });
+
+    return false;
+  } finally {
+    setSaving(false);
   }
+}
 
   function bodyFor(item: Item, isbn: string | null) {
     if (item.source === "inventory") {
@@ -488,26 +515,27 @@ export default function RegisterClient({
     void lookup(cleanIsbn);
   }
 
-  function openManual() {
-    // only a complete ISBN is carried over; a title search stays out of the field
-    if (registrationStartedAt.current === null) {
-      registrationStartedAt.current = Date.now();
-    }
-    registrationMethod.current = "manual";
-    const currentIsbn = fullIsbn(heldIsbn) || fullIsbn(query);
-
-    setManual({
-      title: "",
-      author: "",
-      isbn: currentIsbn,
-      publisher: "",
-      year: "",
-      categoryId: "",
-      shelf: "",
-      qty: "1",
-    });
+function openManual() {
+  if (registrationStartedAt.current === null) {
+    registrationStartedAt.current = Date.now();
   }
 
+  registrationMethod.current = "manual";
+
+  const currentIsbn = fullIsbn(heldIsbn) || fullIsbn(query);
+
+  setManual({
+    title: "",
+    author: "",
+    isbn: currentIsbn,
+    publisher: "",
+    year: "",
+    categoryId: "",
+    shelf: "",
+    qty: "1",
+   cover: { ...emptyImageDraft },
+  });
+}
   function acceptQty(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -532,20 +560,56 @@ export default function RegisterClient({
     );
   }
 
-  function saveManual(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+async function saveManual(
+  e: React.FormEvent<HTMLFormElement>,
+) {
+  e.preventDefault();
 
-    if (!manual) return;
+  if (!manual || saving || coverBusy) return;
 
-    const count = Number(manual.qty);
+  const count = Number(manual.qty);
 
-    if (!Number.isInteger(count) || count < 1 || count > 500) {
+  if (!Number.isInteger(count) || count < 1 || count > 500) {
+    return;
+  }
+
+  if (!manual.title.trim()) {
+    return;
+  }
+
+  setCoverBusy(true);
+
+  let uploadedUrl: string | null = null;
+  let registered = false;
+
+  try {
+    let coverUrl: string | null = null;
+
+    try {
+      const resolved = await resolveImageDraft(manual.cover, {
+        bucket: COVER_BUCKET,
+        folder: "books",
+      });
+
+      coverUrl = resolved.url;
+
+      if (resolved.uploaded) {
+        uploadedUrl = resolved.url;
+      }
+    } catch (error) {
+      console.error("MANUAL COVER UPLOAD FAILED:", error);
+
+      setToast({
+        ok: false,
+        text: tInv("cover.tooBig"),
+      });
+
       return;
     }
 
     const cleanIsbn = manual.isbn.trim();
 
-    void submit(
+    registered = await submit(
       {
         kind: "manual",
         title: manual.title,
@@ -555,6 +619,7 @@ export default function RegisterClient({
         year: manual.year,
         shelf: manual.shelf,
         categoryId: manual.categoryId || null,
+        coverUrl,
       },
       {
         title: manual.title,
@@ -563,13 +628,21 @@ export default function RegisterClient({
         publisher: manual.publisher || null,
         year: manual.year || null,
         source: "manual",
-        cover: null,
+        cover: coverUrl,
       },
       "manual:" + (cleanIsbn || manual.title),
       count,
       "manual",
     );
+  } finally {
+    // If registration failed, remove the newly uploaded image.
+    if (!registered && uploadedUrl) {
+      await removeUploadedImage(COVER_BUCKET, uploadedUrl);
+    }
+
+    setCoverBusy(false);
   }
+}
 
   const setField =
     (key: keyof Draft) =>
@@ -1125,7 +1198,22 @@ export default function RegisterClient({
             className="max-h-[92vh] w-full space-y-3 overflow-y-auto rounded-t-2xl bg-white p-5 pb-[max(5.25rem,env(safe-area-inset-bottom))] sm:max-w-md sm:rounded-2xl"
           >
             <h2 className="font-semibold">{t("manual.title")}</h2>
-
+<ImageUpload
+  value={manual.cover}
+  onChange={(cover) =>
+    setManual((current) =>
+      current ? { ...current, cover } : current,
+    )
+  }
+  disabled={saving || coverBusy}
+  labels={{
+    choose: tInv("cover.choose"),
+    replace: tInv("cover.replace"),
+    remove: tInv("cover.remove"),
+    wrongType: tInv("cover.wrongType"),
+    tooBig: tInv("cover.tooBig"),
+  }}
+/>
             <input
               required
               placeholder={t("manual.bookTitle")}
@@ -1212,14 +1300,21 @@ export default function RegisterClient({
                 {t("cancel")}
               </button>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className={`${primary} flex-1`}
-                style={{ touchAction: "manipulation" }}
-              >
-                {t("manual.save")}
-              </button>
+             <button
+  type="submit"
+  disabled={saving || coverBusy}
+  className={`${primary} flex-1`}
+  style={{ touchAction: "manipulation" }}
+>
+  {saving || coverBusy ? (
+    <span className="inline-flex items-center justify-center gap-2">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      {t("searching")}
+    </span>
+  ) : (
+    t("manual.save")
+  )}
+</button>
             </div>
           </form>
         </div>

@@ -1,10 +1,13 @@
-// src/app/inventory/page.tsx
+import { createClient } from "@/lib/supabase/server";
 import InventoryClient from "@/components/inventory/InventoryClient";
 
-export default function InventoryPage() {
-  return (
-    <main className="mx-auto w-full max-w-6xl px-4 pb-10">
-      <InventoryClient />
-    </main>
-  );
+export default async function InventoryPage() {
+  const supabase = await createClient();
+
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("id, name_sq, name_en")
+    .order("name_en");
+
+  return <InventoryClient categories={categories ?? []} />;
 }

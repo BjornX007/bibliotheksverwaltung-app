@@ -148,7 +148,21 @@
   "actionError": "Action failed. Please try again.",
   "hasLoans": "Not possible while copies are on loan.",
   "conflict": "The book was changed elsewhere. Please retry."
-
+,     "author": "Author",
+    "noCategory": "No category",
+    "save": "Save",
+    "invalidIsbn": "Invalid ISBN.",
+    "titleRequired": "Title is required.",
+    "duplicateIsbn": "This ISBN already exists.",
+    "cover": {
+      "choose": "Choose photo",
+      "replace": "Replace photo",
+      "remove": "Remove photo",
+      "uploading": "Uploading…",
+      "wrongType": "Please choose an image file.",
+      "tooBig": "The image is too large.",
+      "failed": "Upload failed. Please try again."
+    }
   },
  
 "loans": {
