@@ -150,46 +150,43 @@
   "conflict": "The book was changed elsewhere. Please retry."
 
   },
- "loans": {
-    "stepBook": "Book",
-    "stepStudent": "Student",
-    "stepDue": "Due date",
-    "searchPlaceholder": "Search by title, author, or ISBN",
-    "scan": "Scan barcode",
-    "clear": "Clear",
-    "searching": "Searching...",
-    "noBooks": "No books found",
-    "available": "{available}/{total} available",
-    "unavailable": "Unavailable",
-    "noCopies": "No copies are currently available.",
-    "change": "Change",
-    "studentName": "Student name",
-    "studentClass": "Class",
-    "studentPhone": "Phone",
-    "savedStudent": "Existing student",
-    "newStudent": "New student",
-    "dueDate": "Due date",
-    "days": "{count, plural, =1 {# day} other {# days}}",
-    "saving": "Saving...",
-    "submit": "Create loan",
-    "success": "Loan created for {student}: {title}.",
-    "errors": {
-      "INVALID_INPUT": "Please check the information you entered.",
-      "NO_COPIES": "No copies are available.",
-      "ALREADY_LOANED": "This book is already loaned.",
-      "UNAUTHORIZED": "You are not authorized.",
-      "LOAN_FAILED": "The loan could not be created.",
-      "NETWORK": "A network error occurred."}
+ 
+"loans": {
+  "stepBook": "Book",
+  "stepStudent": "Student",
+  "stepDue": "Due date",
+  "searchPlaceholder": "Search by title, author, or ISBN",
+  "scan": "Scan barcode",
+  "clear": "Clear",
+  "searching": "Searching...",
+  "noBooks": "No books found",
+  "available": "{available}/{total} available",
+  "unavailable": "Unavailable",
+  "noCopies": "No copies are currently available.",
+  "change": "Change",
+  "studentName": "Student name",
+  "studentClass": "Class",
+  "studentPhone": "Phone",
+  "savedStudent": "Existing student",
+  "newStudent": "New student",
+  "dueDate": "Due date",
+  "days": "{count, plural, =1 {# day} other {# days}}",
+  "saving": "Saving...",
+  "submit": "Create loan",
+  "success": "Loan created for {student}: {title}.",
+  "errors": {
+    "INVALID_INPUT": "Please check the information you entered.",
+    "NO_COPIES": "No copies are available.",
+    "ALREADY_LOANED": "This book is already loaned.",
+    "UNAUTHORIZED": "You are not authorized.",
+    "LOAN_FAILED": "The loan could not be created.",
+    "NETWORK": "A network error occurred."
   },
-
- "loans": {
   "title": "Loans",
   "subtitle": "Manage currently borrowed books.",
   "newLoan": "New loan",
   "signInRequired": "You must be signed in to view loans.",
   "loadError": "Failed to load loans.",
-  "searchPlaceholder": "Search student or book",
-  "clear": "Clear",
   "markReturned": "Mark returned",
   "actionError": "Action failed. Please try again.",
   "empty": "No loans yet.",
@@ -218,4 +215,6 @@
     "status": "Status",
     "actions": "Actions"
   }
-}}
+}
+
+}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   AlertCircle,
+  BookOpen,
   Camera,
   Loader2,
   Minus,
@@ -32,23 +33,31 @@ type Book = {
 
 const PAGE_SIZE = 24;
 
-const input =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
+const searchField =
+  "w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-10 text-base shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 [&::-webkit-search-cancel-button]:hidden";
 
 const primary =
-  "rounded-lg bg-blue-600 px-4 py-3 font-medium text-white disabled:opacity-50";
+  "rounded-xl bg-blue-600 px-4 py-3 font-medium text-white disabled:opacity-50";
 
 const secondary =
-  "rounded-lg border border-slate-300 bg-white px-4 py-3 font-medium disabled:opacity-50";
+  "rounded-xl border border-slate-300 bg-white px-4 py-3 font-medium disabled:opacity-50";
 
 const danger =
-  "rounded-lg bg-red-600 px-4 py-3 font-medium text-white disabled:opacity-50";
+  "rounded-xl bg-red-600 px-4 py-3 font-medium text-white disabled:opacity-50";
 
 const stepBtn =
   "rounded-md border border-slate-300 bg-white p-1.5 text-slate-700 active:bg-slate-100 disabled:opacity-40";
 
+// larger touch targets for the mobile cards
+const stepBtnLg =
+  "rounded-lg border border-slate-300 bg-white p-2 text-slate-700 active:bg-slate-100 disabled:opacity-40";
+
 const trashBtn =
-  "rounded-md p-1.5 text-red-600 active:bg-red-50 disabled:opacity-40";
+  "rounded-md p-1.5 text-red-600 hover:bg-red-50 active:bg-red-50 disabled:opacity-40";
+
+// round button that sits on top of the cover in the mobile cards
+const trashOverlay =
+  "rounded-full bg-white/95 p-2 text-red-600 shadow ring-1 ring-black/5 active:bg-red-50 disabled:opacity-40";
 
 function Stock({
   book,
@@ -56,28 +65,41 @@ function Stock({
   onAdjust,
   decreaseLabel,
   increaseLabel,
+  large = false,
+  className = "",
 }: {
   book: Book;
   busy: boolean;
   onAdjust: (book: Book, delta: 1 | -1) => void;
   decreaseLabel: string;
   increaseLabel: string;
+  large?: boolean;
+  className?: string;
 }) {
+  const btn = large ? stepBtnLg : stepBtn;
+  const icon = large ? "h-5 w-5" : "h-4 w-4";
+
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <span
+      className={`inline-flex items-center ${
+        large ? "gap-1" : "gap-1.5"
+      } ${className}`}
+    >
       <button
         type="button"
         onClick={() => onAdjust(book, -1)}
         disabled={busy || book.qty_available <= 0}
         aria-label={decreaseLabel}
-        className={stepBtn}
+        className={btn}
         style={{ touchAction: "manipulation" }}
       >
-        <Minus className="h-4 w-4" aria-hidden />
+        <Minus className={icon} aria-hidden />
       </button>
 
       <span
-        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${
+        className={`inline-flex rounded-full px-2 py-0.5 font-semibold tabular-nums ${
+          large ? "text-sm" : "text-xs"
+        } ${
           book.qty_available === 0
             ? "bg-red-100 text-red-700"
             : "bg-green-100 text-green-700"
@@ -91,10 +113,10 @@ function Stock({
         onClick={() => onAdjust(book, 1)}
         disabled={busy}
         aria-label={increaseLabel}
-        className={stepBtn}
+        className={btn}
         style={{ touchAction: "manipulation" }}
       >
-        <Plus className="h-4 w-4" aria-hidden />
+        <Plus className={icon} aria-hidden />
       </button>
     </span>
   );
@@ -325,14 +347,14 @@ export default function InventoryClient() {
     setActiveQuery(value.trim());
   }
 
-function onScan(code: string) {
-  const clean = code.replace(/[\s-]/g, "").trim().toUpperCase();
+  function onScan(code: string) {
+    const clean = code.replace(/[\s-]/g, "").trim().toUpperCase();
 
-  // the camera stays open (and fixed) so the next book can be scanned right away
-  apply(clean);
-}
+    // the camera stays open (and fixed) so the next book can be scanned right away
+    apply(clean);
+  }
 
-  function stock(book: Book) {
+  function stock(book: Book, large = false) {
     return (
       <Stock
         book={book}
@@ -340,11 +362,13 @@ function onScan(code: string) {
         onAdjust={adjust}
         decreaseLabel={t("decrease")}
         increaseLabel={t("increase")}
+        large={large}
+        className={large ? "w-full justify-between" : ""}
       />
     );
   }
 
-  function deleteButton(book: Book) {
+  function deleteButton(book: Book, overlay = false) {
     return (
       <button
         type="button"
@@ -354,95 +378,98 @@ function onScan(code: string) {
         }}
         disabled={busyId === book.id}
         aria-label={t("delete")}
-        className={trashBtn}
+        className={overlay ? trashOverlay : trashBtn}
         style={{ touchAction: "manipulation" }}
       >
-        <Trash2 className="h-5 w-5" aria-hidden />
+        <Trash2 className={overlay ? "h-5 w-5" : "h-5 w-5"} aria-hidden />
       </button>
     );
   }
 
+  const initialLoading = loading && books.length === 0;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-baseline justify-between gap-3 pt-4">
-        <h1 className="text-xl font-semibold">{t("title")}</h1>
+    <div className="space-y-4 pb-24">
+      <div className="flex items-center justify-between gap-3 pt-4">
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
 
         {total !== null && (
-          <span className="text-sm tabular-nums text-slate-500">
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium tabular-nums text-slate-600">
             {t("count", { count: total })}
           </span>
         )}
       </div>
 
       {/* search + camera: stay fixed at the top while the list scrolls */}
-<div className="sticky top-0 z-30 -mx-4 space-y-2 bg-white/95 px-4 py-2 backdrop-blur">
-  <form
-    onSubmit={(e) => {
-      e.preventDefault();
-      apply(query);
-    }}
-    className="flex gap-2"
-  >
-    <div className="relative min-w-0 flex-1">
-      <Search
-        className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-        aria-hidden
-      />
-
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        inputMode="search"
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="none"
-        spellCheck={false}
-        placeholder={t("placeholder")}
-        className={`${input} pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden`}
-      />
-
-      {query && (
-        <button
-          type="button"
-          onClick={() => apply("")}
-          aria-label={t("clear")}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-slate-400 active:bg-slate-100"
-          style={{ touchAction: "manipulation" }}
+      <div className="sticky top-0 z-30 -mx-4 space-y-2 border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            apply(query);
+          }}
+          className="flex gap-2"
         >
-          <X className="h-4 w-4" aria-hidden />
-        </button>
-      )}
-    </div>
+          <div className="relative min-w-0 flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+              aria-hidden
+            />
 
-    <button
-      type="button"
-      onClick={() => setCamera((current) => !current)}
-      aria-label={t("scan")}
-      aria-pressed={camera}
-      className={`${camera ? primary : secondary} shrink-0`}
-      style={{ touchAction: "manipulation" }}
-    >
-      <Camera className="h-5 w-5" aria-hidden />
-    </button>
-  </form>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              inputMode="search"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder={t("placeholder")}
+              className={searchField}
+            />
 
-  {camera && (
-    <div className="overflow-hidden rounded-xl">
-      <BarcodeScanner
-        compact
-        paused={loading}
-        onScan={onScan}
-        onClose={() => setCamera(false)}
-      />
-    </div>
-  )}
-</div>
-      {/* action error */}
+            {query && (
+              <button
+                type="button"
+                onClick={() => apply("")}
+                aria-label={t("clear")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-slate-400 active:bg-slate-100"
+                style={{ touchAction: "manipulation" }}
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setCamera((current) => !current)}
+            aria-label={t("scan")}
+            aria-pressed={camera}
+            className={`${camera ? primary : secondary} shrink-0`}
+            style={{ touchAction: "manipulation" }}
+          >
+            <Camera className="h-5 w-5" aria-hidden />
+          </button>
+        </form>
+
+        {camera && (
+          <div className="overflow-hidden rounded-xl">
+            <BarcodeScanner
+              compact
+              paused={loading}
+              onScan={onScan}
+              onClose={() => setCamera(false)}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* action error: fixed at the top so it is always visible */}
       {actionError && (
         <div
           role="alert"
-          className="flex items-center justify-between gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+          className="fixed inset-x-3 top-3 z-100 flex items-center justify-between gap-3 rounded-xl bg-red-600 p-3 text-sm text-white shadow-lg"
         >
           <span className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
@@ -453,7 +480,7 @@ function onScan(code: string) {
             type="button"
             onClick={() => setActionError(null)}
             aria-label={t("clear")}
-            className="rounded p-1 text-red-700 active:bg-red-100"
+            className="rounded-full p-1 active:bg-red-700"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -462,7 +489,7 @@ function onScan(code: string) {
 
       {/* desktop: table */}
       {books.length > 0 && (
-        <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white md:block">
+        <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-slate-500">
               <tr>
@@ -483,21 +510,23 @@ function onScan(code: string) {
 
             <tbody className="divide-y divide-slate-100">
               {books.map((book) => (
-                <tr key={book.id} className="align-top">
+                <tr key={book.id} className="align-top hover:bg-slate-50/70">
                   <td className="p-3">
                     <BookCover
                       src={book.cover}
-                      className="h-24 w-16 object-cover"
+                      className="h-24 w-16 rounded object-cover"
                     />
                   </td>
 
-                  <td className="max-w-xs p-3">
-                    <div className="font-medium leading-snug">
+                  <td className="min-w-56 max-w-sm p-3">
+                    <div className="break-words font-semibold leading-snug text-slate-900">
                       {book.title}
                     </div>
 
                     {book.author && (
-                      <div className="text-slate-500">{book.author}</div>
+                      <div className="break-words text-slate-500">
+                        {book.author}
+                      </div>
                     )}
                   </td>
 
@@ -505,14 +534,16 @@ function onScan(code: string) {
                   <td className="p-3 tabular-nums">{book.year ?? "—"}</td>
                   <td className="p-3">{book.language ?? "—"}</td>
 
-                  <td className="p-3 tabular-nums text-slate-600">
+                  <td className="whitespace-nowrap p-3 tabular-nums text-slate-600">
                     {book.isbn ?? "—"}
                   </td>
 
                   <td className="p-3">{categoryName(book) ?? "—"}</td>
                   <td className="p-3">{book.shelf ?? "—"}</td>
 
-                  <td className="p-3 text-right">{stock(book)}</td>
+                  <td className="whitespace-nowrap p-3 text-right">
+                    {stock(book)}
+                  </td>
                   <td className="p-3 text-right">{deleteButton(book)}</td>
                 </tr>
               ))}
@@ -521,80 +552,144 @@ function onScan(code: string) {
         </div>
       )}
 
-      {/* mobile: grid */}
+      {/* mobile: edge-to-edge grid, cards touch the screen sides */}
       {books.length > 0 && (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:hidden">
-          {books.map((book) => (
-            <li
-              key={book.id}
-              className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white"
-            >
-              <BookCover
-                src={book.cover}
-                className="h-44 w-full rounded-none object-contain"
-              />
+        <div className="-mx-4 overflow-hidden border-y border-slate-200 md:hidden">
+          <ul className="-mb-px -mr-px grid grid-cols-2 sm:grid-cols-3">
+            {books.map((book) => {
+              const category = categoryName(book);
 
-              <div className="flex flex-1 flex-col gap-1 p-3">
-                <div className="line-clamp-2 font-medium leading-snug">
-                  {book.title}
-                </div>
+              return (
+                <li
+                  key={book.id}
+                  className="flex flex-col border-b border-r border-slate-200 bg-white"
+                >
+                  <div className="relative">
+                    <BookCover
+                      src={book.cover}
+                      className="aspect-[2/3] w-full rounded-none bg-slate-100 object-cover"
+                    />
 
-                {book.author && (
-                  <div className="line-clamp-1 text-sm text-slate-500">
-                    {book.author}
+                    <div className="absolute right-2 top-2">
+                      {deleteButton(book, true)}
+                    </div>
                   </div>
-                )}
 
-                {(book.publisher || book.year) && (
-                  <div className="line-clamp-1 text-xs text-slate-500">
-                    {[book.publisher, book.year].filter(Boolean).join(" · ")}
+                  <div className="flex flex-1 flex-col gap-1.5 p-3">
+                    <h3 className="break-words text-[15px] font-semibold leading-snug text-slate-900">
+                      {book.title}
+                    </h3>
+
+                    {book.author && (
+                      <p className="break-words text-sm leading-snug text-slate-600">
+                        {book.author}
+                      </p>
+                    )}
+
+                    {book.publisher && (
+                      <p className="break-words text-xs leading-snug text-slate-500">
+                        {book.publisher}
+                      </p>
+                    )}
+
+                    {(category ||
+                      book.year ||
+                      book.language ||
+                      book.shelf) && (
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {category && (
+                          <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700">
+                            {category}
+                          </span>
+                        )}
+
+                        {book.year && (
+                          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs tabular-nums text-slate-600">
+                            {book.year}
+                          </span>
+                        )}
+
+                        {book.language && (
+                          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+                            {book.language}
+                          </span>
+                        )}
+
+                        {book.shelf && (
+                          <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700">
+                            {t("columns.shelf")} {book.shelf}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {book.isbn && (
+                      <p className="break-all text-xs tabular-nums text-slate-400">
+                        ISBN {book.isbn}
+                      </p>
+                    )}
                   </div>
-                )}
 
-                {book.isbn && (
-                  <div className="truncate text-xs tabular-nums text-slate-400">
-                    ISBN {book.isbn}
+                  <div className="border-t border-slate-100 p-2">
+                    {stock(book, true)}
                   </div>
-                )}
-
-                <div className="text-xs text-slate-500">
-                  {[
-                    categoryName(book),
-                    book.language,
-                    book.shelf
-                      ? `${t("columns.shelf")} ${book.shelf}`
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </div>
-
-                <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-                  {stock(book)}
-                  {deleteButton(book)}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
 
       {/* states */}
+      {initialLoading && (
+        <div className="-mx-4 overflow-hidden border-y border-slate-200 md:hidden">
+          <ul className="-mb-px -mr-px grid grid-cols-2 sm:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <li
+                key={i}
+                className="animate-pulse border-b border-r border-slate-200 bg-white"
+                aria-hidden
+              >
+                <div className="aspect-[2/3] w-full bg-slate-100" />
+
+                <div className="space-y-2 p-3">
+                  <div className="h-4 w-11/12 rounded bg-slate-100" />
+                  <div className="h-4 w-2/3 rounded bg-slate-100" />
+                  <div className="h-3 w-1/2 rounded bg-slate-100" />
+                </div>
+
+                <div className="p-2">
+                  <div className="h-10 w-full rounded-lg bg-slate-100" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {loading && (
-        <p className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+        <p
+          className={`items-center justify-center gap-2 py-6 text-sm text-slate-500 ${
+            initialLoading ? "hidden md:flex" : "flex"
+          }`}
+        >
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           {t("loading")}
         </p>
       )}
 
       {!loading && !error && books.length === 0 && (
-        <p className="py-10 text-center text-sm text-slate-500">
-          {t("empty")}
-        </p>
+        <div className="flex flex-col items-center gap-3 py-14 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+            <BookOpen className="h-7 w-7" aria-hidden />
+          </span>
+
+          <p className="text-sm text-slate-500">{t("empty")}</p>
+        </div>
       )}
 
       {error && (
-        <div className="flex items-center justify-between gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">
           <span className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
             {t("loadError")}
@@ -612,10 +707,10 @@ function onScan(code: string) {
 
       <div ref={sentinelRef} className="h-px" />
 
-      {/* delete confirmation */}
+      {/* delete confirmation: bottom sheet on mobile, centered dialog on larger screens */}
       {confirmBook && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-90 flex items-end bg-black/40 sm:items-center sm:justify-center sm:p-4"
           onClick={() => !busyId && setConfirmBook(null)}
         >
           <div
@@ -623,22 +718,31 @@ function onScan(code: string) {
             aria-modal="true"
             aria-labelledby="delete-title"
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm space-y-4 rounded-xl bg-white p-5 shadow-xl"
+            className="w-full space-y-4 rounded-t-2xl bg-white p-5 pb-[max(5.25rem,env(safe-area-inset-bottom))] shadow-xl sm:max-w-sm sm:rounded-2xl sm:pb-5"
           >
-            <h2 id="delete-title" className="text-lg font-semibold">
-              {t("deleteTitle")}
-            </h2>
+            <div className="flex gap-3">
+              <BookCover
+                src={confirmBook.cover}
+                className="h-28 w-20 shrink-0 rounded object-cover"
+              />
 
-            <p className="text-sm text-slate-600">
-              {t("deleteBody", { title: confirmBook.title })}
-            </p>
+              <div className="min-w-0 space-y-1">
+                <h2 id="delete-title" className="text-lg font-semibold">
+                  {t("deleteTitle")}
+                </h2>
 
-            <div className="flex justify-end gap-2">
+                <p className="break-words text-sm text-slate-600">
+                  {t("deleteBody", { title: confirmBook.title })}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 sm:justify-end">
               <button
                 type="button"
                 onClick={() => setConfirmBook(null)}
                 disabled={!!busyId}
-                className={secondary}
+                className={`${secondary} flex-1 sm:flex-none`}
               >
                 {t("cancel")}
               </button>
@@ -647,10 +751,13 @@ function onScan(code: string) {
                 type="button"
                 onClick={() => void confirmDelete()}
                 disabled={!!busyId}
-                className={danger}
+                className={`${danger} flex-1 sm:flex-none`}
               >
                 {busyId ? (
-                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                  <Loader2
+                    className="mx-auto h-5 w-5 animate-spin"
+                    aria-hidden
+                  />
                 ) : (
                   t("confirmDelete")
                 )}

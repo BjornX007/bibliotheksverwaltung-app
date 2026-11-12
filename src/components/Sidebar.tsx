@@ -123,10 +123,15 @@ function LocaleSwitch({
 function Logo({ name }: { name: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
-        <BookOpen className="h-5 w-5" aria-hidden />
+      <img
+        src="/logo shkolla.jpeg"
+        alt="Logo"
+        className="h-9 w-9 rounded-lg object-contain"
+      />
+
+      <span className="text-base font-semibold tracking-tight">
+        {name}
       </span>
-      <span className="text-base font-semibold tracking-tight">{name}</span>
     </div>
   );
 }

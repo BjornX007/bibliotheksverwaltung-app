@@ -21,7 +21,6 @@ type Category = {
   name_en: string;
 };
 
-
 type Source = "inventory" | "catalog" | "manual";
 
 type Item = {
@@ -79,6 +78,11 @@ const KNOWN_ERRORS = [
   "REGISTER_FAILED",
 ];
 
+// search starts as soon as this many characters are typed
+const MIN_QUERY_LENGTH = 1;
+// pause after the last keystroke before the request is sent
+const SEARCH_DEBOUNCE_MS = 250;
+
 const input =
   "w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
 
@@ -127,6 +131,14 @@ function Cover({
       className={`shrink-0 rounded bg-slate-100 object-cover ${className}`}
     />
   );
+}
+
+// returns the ISBN only if the value is a full ISBN-13 (starts with 978/979,
+// 13 digits); spaces and hyphens are ignored. Anything else -> "".
+function fullIsbn(value: string | null | undefined): string {
+  const digits = (value ?? "").replace(/[\s-]/g, "");
+
+  return /^97[89]\d{10}$/.test(digits) ? digits : "";
 }
 
 function metaFor(item: Item, isbn: string | null): Meta {
@@ -183,6 +195,10 @@ export default function RegisterClient({
 
   const [saving, setSaving] = useState(false);
 
+  // Registration analytics: keep the start time from the first user action.
+  const registrationStartedAt = useRef<number | null>(null);
+  const registrationMethod = useRef<"manual" | "scan" | "catalog" | "inventory">("catalog");
+
   const focusInput = useCallback(() => {
     if (window.matchMedia("(pointer: fine)").matches) {
       inputRef.current?.focus();
@@ -211,9 +227,13 @@ export default function RegisterClient({
   }, [panelOpen]);
 
   function clearSearch() {
+    // invalidate any request that is still in flight
+    seq.current++;
+
     setQuery("");
     setItems([]);
     setSearched(false);
+    setLoading(false);
     setInvalidIsbn(false);
     setHeldIsbn(null);
   }
@@ -230,8 +250,13 @@ export default function RegisterClient({
     meta: Meta,
     key: string,
     count: number,
+    method: "manual" | "scan" | "catalog" | "inventory",
   ) {
     if (saving) return;
+
+    const startedAt = registrationStartedAt.current ?? Date.now();
+    const startedAtIso = new Date(startedAt).toISOString();
+    registrationStartedAt.current = startedAt;
 
     setSaving(true);
 
@@ -244,6 +269,8 @@ export default function RegisterClient({
         body: JSON.stringify({
           ...body,
           qty: count,
+          method,
+          startedAt: startedAtIso,
         }),
       });
 
@@ -292,6 +319,8 @@ export default function RegisterClient({
       setHeldIsbn(null);
       setPending(null);
       setManual(null);
+      registrationStartedAt.current = null;
+      registrationMethod.current = "catalog";
 
       clearSearch();
 
@@ -300,6 +329,7 @@ export default function RegisterClient({
       }, 50);
     } catch (error) {
       console.error("REGISTER NETWORK ERROR:", error);
+      registrationStartedAt.current = null;
 
       setToast({
         ok: false,
@@ -334,6 +364,11 @@ export default function RegisterClient({
         metaFor(item, useIsbn),
         `${item.source}:${item.id}`,
         1,
+        item.source === "inventory"
+          ? "inventory"
+          : registrationMethod.current === "scan"
+            ? "scan"
+            : "catalog",
       );
       return;
     }
@@ -346,7 +381,9 @@ export default function RegisterClient({
     });
   }
 
-  async function lookup(q: string) {
+  // silent = live search while typing: partial input must not trigger the
+  // "invalid ISBN" warning (e.g. after typing only the first digits).
+  async function lookup(q: string, silent = false) {
     const cleanQuery = q.trim();
 
     if (!cleanQuery) return;
@@ -374,6 +411,8 @@ export default function RegisterClient({
 
       const json = await res.json().catch(() => ({}));
 
+      if (mine !== seq.current) return;
+
       if (!res.ok) {
         console.error("LOOKUP FAILED:", json);
 
@@ -389,7 +428,7 @@ export default function RegisterClient({
       const nextItems: Item[] = Array.isArray(json.items) ? json.items : [];
 
       setItems(nextItems);
-      setInvalidIsbn(!!json.invalid);
+      setInvalidIsbn(!silent && !!json.invalid);
       setSearched(true);
 
       if (json.mode === "isbn" && json.isbn) {
@@ -417,16 +456,22 @@ export default function RegisterClient({
     }
   }
 
+  // live search: starts with the first typed character
   useEffect(() => {
     const q = query.trim();
 
-    if (q.length < 3) {
+    if (q.length < MIN_QUERY_LENGTH) {
       return;
     }
 
+    // a complete ISBN-10/13 is a real ISBN lookup (invalid ones get reported);
+    // everything else is partial typing and stays silent
+    const compact = q.replace(/[\s-]/g, "");
+    const looksLikeIsbn = /^\d{13}$/.test(compact) || /^\d{9}[\dXx]$/.test(compact);
+
     const id = window.setTimeout(() => {
-      void lookup(q);
-    }, 400);
+      void lookup(q, !looksLikeIsbn);
+    }, SEARCH_DEBOUNCE_MS);
 
     return () => {
       window.clearTimeout(id);
@@ -435,6 +480,8 @@ export default function RegisterClient({
   }, [query]);
 
   function onScan(isbn: string) {
+    registrationStartedAt.current = Date.now();
+    registrationMethod.current = "scan";
     const cleanIsbn = isbn.replace(/[\s-]/g, "").trim().toUpperCase();
 
     setQuery(cleanIsbn);
@@ -442,7 +489,12 @@ export default function RegisterClient({
   }
 
   function openManual() {
-    const currentIsbn = heldIsbn ?? query.trim();
+    // only a complete ISBN is carried over; a title search stays out of the field
+    if (registrationStartedAt.current === null) {
+      registrationStartedAt.current = Date.now();
+    }
+    registrationMethod.current = "manual";
+    const currentIsbn = fullIsbn(heldIsbn) || fullIsbn(query);
 
     setManual({
       title: "",
@@ -472,6 +524,11 @@ export default function RegisterClient({
       metaFor(pending.item, pending.isbn),
       `${pending.item.source}:${pending.item.id}`,
       n,
+      pending.item.source === "inventory"
+        ? "inventory"
+        : registrationMethod.current === "scan"
+          ? "scan"
+          : "catalog",
     );
   }
 
@@ -510,6 +567,7 @@ export default function RegisterClient({
       },
       "manual:" + (cleanIsbn || manual.title),
       count,
+      "manual",
     );
   }
 
@@ -589,91 +647,104 @@ export default function RegisterClient({
         </p>
       </div>
 
-    {/* search + camera: stay fixed at the top while the results scroll */}
-<div className="sticky top-0 z-30 -mx-4 space-y-2 bg-white/95 px-4 py-2 backdrop-blur">
-  <form
-    onSubmit={(e) => {
-      e.preventDefault();
+      {/* search + camera: stay fixed at the top while the results scroll */}
+      <div className="sticky top-0 z-30 -mx-4 space-y-2 bg-white/95 px-4 py-2 backdrop-blur">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
 
-      const q = query.trim();
+            const q = query.trim();
 
-      if (q) {
-        void lookup(q);
-      }
-    }}
-    className="flex gap-2"
-    style={{
-      pointerEvents: "auto",
-      touchAction: "manipulation",
-    }}
-  >
-    <input
-      ref={inputRef}
-      type="search"
-      value={query}
-      onChange={(e) => {
-        const value = e.target.value;
+            if (q) {
+              void lookup(q);
+            }
+          }}
+          className="flex gap-2"
+          style={{
+            pointerEvents: "auto",
+            touchAction: "manipulation",
+          }}
+        >
+          <input
+            ref={inputRef}
+            type="search"
+            value={query}
+            onChange={(e) => {
+              const value = e.target.value;
 
-        setQuery(value);
+              if (value.trim() && registrationMethod.current !== "scan" && registrationStartedAt.current === null) {
+                registrationStartedAt.current = Date.now();
+                registrationMethod.current = "catalog";
+              }
+              if (!value.trim()) {
+                registrationStartedAt.current = null;
+                registrationMethod.current = "catalog";
+              }
 
-        if (!value.trim()) {
-          setItems([]);
-          setSearched(false);
-          setInvalidIsbn(false);
-          setHeldIsbn(null);
-        }
-      }}
-      inputMode="search"
-      autoComplete="off"
-      autoCorrect="off"
-      autoCapitalize="none"
-      spellCheck={false}
-      placeholder={t("placeholder")}
-      className={`${input} min-w-0 flex-1`}
-      style={{
-        pointerEvents: "auto",
-        touchAction: "manipulation",
-      }}
-    />
+              setQuery(value);
 
-    <button
-      type="submit"
-      className={`${secondary} shrink-0`}
-      aria-label={t("search")}
-      style={{
-        pointerEvents: "auto",
-        touchAction: "manipulation",
-      }}
-    >
-      <Search className="h-5 w-5" aria-hidden />
-    </button>
+              if (!value.trim()) {
+                // invalidate any request that is still in flight
+                seq.current++;
 
-    <button
-      type="button"
-      onClick={() => setCamera((current) => !current)}
-      aria-label={t("scan")}
-      aria-pressed={camera}
-      className={`${camera ? primary : secondary} shrink-0`}
-      style={{
-        pointerEvents: "auto",
-        touchAction: "manipulation",
-      }}
-    >
-      <Camera className="h-5 w-5" aria-hidden />
-    </button>
-  </form>
+                setItems([]);
+                setSearched(false);
+                setLoading(false);
+                setInvalidIsbn(false);
+                setHeldIsbn(null);
+              }
+            }}
+            inputMode="search"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder={t("placeholder")}
+            className={`${input} min-w-0 flex-1`}
+            style={{
+              pointerEvents: "auto",
+              touchAction: "manipulation",
+            }}
+          />
 
-  {camera && (
-    <div className="overflow-hidden rounded-xl">
-      <BarcodeScanner
-        compact
-        paused={!!pending || !!manual || saving || loading}
-        onScan={onScan}
-        onClose={() => setCamera(false)}
-      />
-    </div>
-  )}
-</div>
+          <button
+            type="submit"
+            className={`${secondary} shrink-0`}
+            aria-label={t("search")}
+            style={{
+              pointerEvents: "auto",
+              touchAction: "manipulation",
+            }}
+          >
+            <Search className="h-5 w-5" aria-hidden />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCamera((current) => !current)}
+            aria-label={t("scan")}
+            aria-pressed={camera}
+            className={`${camera ? primary : secondary} shrink-0`}
+            style={{
+              pointerEvents: "auto",
+              touchAction: "manipulation",
+            }}
+          >
+            <Camera className="h-5 w-5" aria-hidden />
+          </button>
+        </form>
+
+        {camera && (
+          <div className="overflow-hidden rounded-xl">
+            <BarcodeScanner
+              compact
+              paused={!!pending || !!manual || saving || loading}
+              onScan={onScan}
+              onClose={() => setCamera(false)}
+            />
+          </div>
+        )}
+      </div>
 
       {/* last scanned: compact register-style preview, sits under the camera */}
       {last && (
@@ -681,10 +752,7 @@ export default function RegisterClient({
           className="relative z-20 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2 pr-3"
           aria-live="polite"
         >
-          <Cover
-            src={last.cover}
-            className="h-36 w-24"
-          />
+          <Cover src={last.cover} className="h-36 w-24" />
 
           <div className="min-w-0 flex-1">
             <div className="truncate font-medium leading-tight">
@@ -770,10 +838,7 @@ export default function RegisterClient({
                   touchAction: "manipulation",
                 }}
               >
-                <Cover
-                  src={item.cover_url}
-                  className="h-24 w-16"
-                />
+                <Cover src={item.cover_url} className="h-24 w-16" />
 
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">
@@ -927,10 +992,7 @@ export default function RegisterClient({
             >
               {log.map((entry) => (
                 <li key={entry.key} className="flex gap-3 p-3">
-                  <Cover
-                    src={entry.cover}
-                    className="h-32 w-20"
-                  />
+                  <Cover src={entry.cover} className="h-32 w-20" />
 
                   <div className="min-w-0 flex-1 space-y-0.5">
                     <div className="line-clamp-2 font-medium leading-tight">
@@ -998,10 +1060,7 @@ export default function RegisterClient({
             className="w-full space-y-4 rounded-t-2xl bg-white p-5 pb-[max(5.25rem,env(safe-area-inset-bottom))] sm:max-w-sm sm:rounded-2xl"
           >
             <div className="flex gap-3">
-              <Cover
-                src={pending.item.cover_url}
-                className="h-40 w-28"
-              />
+              <Cover src={pending.item.cover_url} className="h-40 w-28" />
 
               <div className="min-w-0">
                 <div className="font-semibold leading-tight">

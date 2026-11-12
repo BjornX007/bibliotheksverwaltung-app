@@ -1,5 +1,8 @@
+
 {
-  "app": { "name": "Biblioteka e Shkollës" },
+  "app": {
+    "name": "Biblioteka e Shkollës"
+  },
   "nav": {
     "dashboard": "Paneli",
     "inventory": "Inventari",
@@ -7,7 +10,9 @@
     "loans": "Huazimet",
     "students": "Nxënësit"
   },
-  "language": { "label": "Gjuha" },
+  "language": {
+    "label": "Gjuha"
+  },
   "dashboard": {
     "title": "Paneli",
     "subtitle": "Pasqyra e bibliotekës",
@@ -16,12 +21,7 @@
       "copies": "Kopje gjithsej",
       "available": "Në dispozicion",
       "onLoan": "Të huazuara",
-      "overdue": "Me vonesë",
-        "status": {
-    "active": "Aktiv",
-    "overdue": "I vonuar",
-    "returned": "Dorëzuar"
-  }
+      "overdue": "Me vonesë"
     },
     "recentLoans": "Huazimet e fundit",
     "byCategory": "Libra sipas kategorisë",
@@ -31,7 +31,11 @@
       "due": "Afati",
       "status": "Statusi"
     },
-    "status": { "onLoan": "Huazuar", "overdue": "Me vonesë", "returned": "Dorëzuar" }
+    "status": {
+      "onLoan": "Huazuar",
+      "overdue": "Me vonesë",
+      "returned": "Dorëzuar"
+    }
   },
   "auth": {
     "login": {
@@ -56,51 +60,38 @@
   },
   "register": {
     "title": "Regjistro libra",
-
     "modeCash": "Një nga një",
     "modeQty": "Me sasi",
-
     "hintCash": "Çdo skanim shton menjëherë 1 kopje.",
     "hintQty": "Çdo skanim pyet sa kopje.",
-
     "placeholder": "ISBN, titull ose autor",
     "search": "Kërko",
     "scan": "Skano",
     "closeCamera": "Mbyll kamerën",
-
     "cameraError": "Kamera nuk është e disponueshme. Lejo qasjen në kamerë ose shkruaj manualisht.",
-
     "searching": "Duke kërkuar…",
     "invalidIsbn": "ISBN-ja nuk është e vlefshme. Kontrollo numrin.",
-
     "notFoundIsbn": "ISBN {isbn} nuk u gjet.",
     "notFoundText": "Nuk u gjet asnjë libër.",
-
     "searchByTitle": "Kërko sipas titullit",
     "addManually": "Shto manualisht",
     "notInList": "Nuk është në listë? Shto manualisht",
-
     "heldIsbn": "ISBN {isbn} do të ruhet me librin",
     "inStock": "{count} në stok",
     "fromCatalog": "Katalog",
-
     "quantity": "Sa kopje?",
     "accept": "Prano",
     "cancel": "Anulo",
-
     "added": "U shtuan {count} × {title}",
-
     "sessionTitle": "Shtuar në këtë sesion",
     "openSession": "Hap sesionin",
     "close": "Mbyll",
     "sessionEmpty": "Sesioni është bosh",
-
     "source": {
       "inventory": "Në inventar",
       "catalog": "Nga katalogu",
       "manual": "Manual"
     },
-
     "manual": {
       "title": "Shto libër manualisht",
       "bookTitle": "Titulli",
@@ -112,7 +103,6 @@
       "shelf": "Rafti",
       "save": "Ruaj librin"
     },
-
     "errors": {
       "INVALID_INPUT": "Kontrollo vlerat e futura.",
       "INVALID_ISBN": "ISBN-ja nuk është e vlefshme.",
@@ -122,45 +112,43 @@
       "NETWORK": "Nuk ka lidhje. Provo përsëri."
     }
   },
- "inventory": {
-  "title": "Inventari",
-  "count": "{count} tituj",
-  "placeholder": "Kërko titullin, autorin ose ISBN",
-  "scan": "Skano barkodin",
-  "clear": "Pastro",
-  "loading": "Duke ngarkuar…",
-  "empty": "Nuk u gjet asnjë libër.",
-  "loadError": "Librat nuk mund të ngarkoheshin.",
-  "retry": "Provo përsëri",
-  "columns": {
-    "cover": "Kopertina",
-    "title": "Titulli",
-    "publisher": "Botuesi",
-    "year": "Viti",
-    "language": "Gjuha",
-    "isbn": "ISBN",
-    "category": "Kategoria",
-    "shelf": "Rafti",
-    "stock": "Të disponueshme / gjithsej"
-  },
-  "delete": "Fshij",
-  "deleteTitle": "Të fshihet libri?",
-  "deleteBody": "\"{title}\" do të fshihet përgjithmonë.",
-  "confirmDelete": "Fshij",
-  "cancel": "Anulo",
-  "increase": "Shto kopje",
-  "decrease": "Hiq kopje",
-  "actionError": "Veprimi dështoi. Provo përsëri.",
-  "hasLoans": "Nuk lejohet ndërsa kopjet janë të huazuara.",
-  "conflict": "Libri u ndryshua diku tjetër. Provo përsëri."
-
-    
+  "inventory": {
+    "title": "Inventari",
+    "count": "{count} tituj",
+    "placeholder": "Kërko titullin, autorin ose ISBN",
+    "scan": "Skano barkodin",
+    "clear": "Pastro",
+    "loading": "Duke ngarkuar…",
+    "empty": "Nuk u gjet asnjë libër.",
+    "loadError": "Librat nuk mund të ngarkoheshin.",
+    "retry": "Provo përsëri",
+    "columns": {
+      "cover": "Kopertina",
+      "title": "Titulli",
+      "publisher": "Botuesi",
+      "year": "Viti",
+      "language": "Gjuha",
+      "isbn": "ISBN",
+      "category": "Kategoria",
+      "shelf": "Rafti",
+      "stock": "Të disponueshme / gjithsej"
+    },
+    "delete": "Fshij",
+    "deleteTitle": "Të fshihet libri?",
+    "deleteBody": "\"{title}\" do të fshihet përgjithmonë.",
+    "confirmDelete": "Fshij",
+    "cancel": "Anulo",
+    "increase": "Shto kopje",
+    "decrease": "Hiq kopje",
+    "actionError": "Veprimi dështoi. Provo përsëri.",
+    "hasLoans": "Nuk lejohet ndërsa kopjet janë të huazuara.",
+    "conflict": "Libri u ndryshua diku tjetër. Provo përsëri."
   },
   "loans": {
     "stepBook": "Libri",
     "stepStudent": "Nxënësi",
     "stepDue": "Afati i kthimit",
-    "searchPlaceholder": "Kërko sipas titullit, autorit ose ISBN-së",
+    "bookSearchPlaceholder": "Kërko sipas titullit, autorit ose ISBN-së",
     "scan": "Skano barkodin",
     "clear": "Pastro",
     "searching": "Duke kërkuar...",
@@ -186,44 +174,40 @@
       "UNAUTHORIZED": "Nuk jeni i autorizuar.",
       "LOAN_FAILED": "Huazimi nuk mund të krijohej.",
       "NETWORK": "Ndodhi një gabim në rrjet."
+    },
+    "title": "Huazimet",
+    "subtitle": "Menaxho librat që janë të huazuar aktualisht.",
+    "newLoan": "Huazim i ri",
+    "signInRequired": "Duhet të hysh në llogari për të parë huazimet.",
+    "loadError": "Huazimet nuk mund të ngarkoheshin.",
+    "searchPlaceholder": "Kërko nxënës ose libër",
+    "markReturned": "Shëno si të dorëzuar",
+    "actionError": "Veprimi dështoi. Provo përsëri.",
+    "empty": "Ende nuk ka huazime.",
+    "noResults": "Asnjë huazim nuk përputhet.",
+    "confirmReturnTitle": "Të shënohet si i dorëzuar?",
+    "confirmReturnBody": "\"{book}\" i huazuar nga {student} do të shënohet si i dorëzuar.",
+    "confirm": "Konfirmo",
+    "cancel": "Anulo",
+    "stats": {
+      "total": "Gjithsej",
+      "active": "Aktive",
+      "overdue": "Të vonuara",
+      "returned": "Të dorëzuara"
+    },
+    "status": {
+      "active": "Aktiv",
+      "overdue": "I vonuar",
+      "returned": "Dorëzuar"
+    },
+    "columns": {
+      "student": "Nxënësi",
+      "class": "Klasa",
+      "book": "Libri",
+      "loaned": "Huazuar më",
+      "due": "Afati",
+      "status": "Statusi",
+      "actions": "Veprime"
     }
-  },
- "loans": {
-  "title": "Huazimet",
-  "subtitle": "Menaxho librat që janë të huazuara aktualisht.",
-  "newLoan": "Huazim i ri",
-  "signInRequired": "Duhet të hysh në llogari për të parë huazimet.",
-  "loadError": "Huazimet nuk mund të ngarkoheshin.",
-  "searchPlaceholder": "Kërko nxënës ose libër",
-  "clear": "Pastro",
-  "markReturned": "Shëno si të dorëzuar",
-  "actionError": "Veprimi dështoi. Provo përsëri.",
-  "empty": "Ende nuk ka huazime.",
-  "noResults": "Asnjë huazim nuk përputhet.",
-  "confirmReturnTitle": "Të shënohet si i dorëzuar?",
-  "confirmReturnBody": "\"{book}\" i huazuar nga {student} do të shënohet si i dorëzuar.",
-  "confirm": "Konfirmo",
-  "cancel": "Anulo",
-  "stats": {
-    "total": "Gjithsej",
-    "active": "Aktive",
-    "overdue": "Të vonuara",
-    "returned": "Të dorëzuara"
-  },
-  "status": {
-    "active": "Aktiv",
-    "overdue": "I vonuar",
-    "returned": "Dorëzuar"
-  },
-  "columns": {
-    "student": "Nxënësi",
-    "class": "Klasa",
-    "book": "Libri",
-    "loaned": "Huazuar më",
-    "due": "Afati",
-    "status": "Statusi",
-    "actions": "Veprime"
   }
-
-}
 }

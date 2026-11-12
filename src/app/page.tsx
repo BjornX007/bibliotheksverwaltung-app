@@ -1,6 +1,9 @@
+//school-library/src/app/page.tsx
+
+
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { getCurrentUser } from "@/lib/auth";
-
+import Link from "next/link";
 type Rel<T> = T | T[] | null;
 
 function one<T>(value: Rel<T>): T | null {
@@ -112,10 +115,20 @@ export default async function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <p className="text-slate-500">{t("subtitle")}</p>
-      </header>
+    <header className="flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 className="text-2xl font-semibold">{t("title")}</h1>
+    <p className="text-slate-500">{t("subtitle")}</p>
+  </div>
+
+  <Link
+    href="/admin/registration-analytics"
+    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+  >
+    <span>📊</span>
+    Registration analytics
+  </Link>
+</header>
 
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         {cards.map((c) => (
