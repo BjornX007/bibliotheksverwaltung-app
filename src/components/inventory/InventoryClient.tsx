@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   AlertCircle,
@@ -63,6 +63,8 @@ type EditErrorKey =
   | "duplicateIsbn"
   | "cover.failed";
 
+type Tab = "all" | "isbn" | "cover" | "dupes";
+
 const PAGE_SIZE = 24;
 
 // must match the bucket created in sql/book-covers-storage.sql
@@ -102,6 +104,98 @@ const trashOverlay =
 
 const editOverlay =
   "rounded-full bg-white/95 p-2 text-slate-700 shadow ring-1 ring-black/5 active:bg-slate-100 disabled:opacity-40";
+
+// lowercase, strip accents and everything that is not a letter or digit
+function norm(s: string) {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+// true if the edit distance between a and b is <= limit
+function within(a: string, b: string, limit: number) {
+  if (Math.abs(a.length - b.length) > limit) return false;
+
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(
+        prev[j] + 1,
+        cur[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+
+    prev = cur;
+  }
+
+  return prev[b.length] <= limit;
+}
+
+// groups books whose titles are the same or differ by a typo or two
+function findDuplicates(books: Book[]) {
+  const items = books
+    .map((b) => ({ b, n: norm(b.title) }))
+    .filter((i) => i.n)
+    .sort((x, y) => x.n.length - y.n.length);
+
+  const parent = items.map((_, i) => i);
+
+  const find = (i: number): number => {
+    while (parent[i] !== i) {
+      parent[i] = parent[parent[i]];
+      i = parent[i];
+    }
+
+    return i;
+  };
+
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      if (items[j].n.length - items[i].n.length > 2) break;
+
+      const a = items[i].n;
+      const b = items[j].n;
+      const max = Math.max(a.length, b.length);
+
+      // short titles: exact match only; long titles: allow 1-2 typos
+      const limit = a === b ? 0 : max < 5 ? -1 : max >= 12 ? 2 : 1;
+
+      if (limit >= 0 && within(a, b, limit)) parent[find(j)] = find(i);
+    }
+  }
+
+  const groups = new Map<number, Book[]>();
+
+  items.forEach((it, i) => {
+    const r = find(i);
+
+    groups.set(r, [...(groups.get(r) ?? []), it.b]);
+  });
+
+  const list: Book[] = [];
+  const groupOf: Record<string, number> = {};
+  let n = 0;
+
+  [...groups.values()]
+    .filter((g) => g.length > 1)
+    .sort((x, y) => norm(x[0].title).localeCompare(norm(y[0].title)))
+    .forEach((g) => {
+      n++;
+
+      g.forEach((b) => {
+        groupOf[b.id] = n;
+        list.push(b);
+      });
+    });
+
+  return { list, groupOf };
+}
 
 function Stock({
   book,
@@ -187,6 +281,10 @@ export default function InventoryClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // to-do tabs: all books are loaded once in the background
+  const [tab, setTab] = useState<Tab>("all");
+  const [audit, setAudit] = useState<Book[] | null>(null);
+
   // adjust / delete
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmBook, setConfirmBook] = useState<Book | null>(null);
@@ -251,6 +349,35 @@ export default function InventoryClient({
     }
   }
 
+  // load every book (used for the to-do tabs)
+  async function loadAudit() {
+    const all: Book[] = [];
+    let offset = 0;
+
+    try {
+      while (true) {
+        const res = await fetch(
+          `/api/inventory/list?q=&offset=${offset}&limit=200`,
+          { cache: "no-store" },
+        );
+
+        if (!res.ok) return;
+
+        const json = await res.json().catch(() => ({}));
+        const page: Book[] = Array.isArray(json.books) ? json.books : [];
+
+        all.push(...page);
+        offset += page.length;
+
+        if (!json.hasMore || page.length === 0) break;
+      }
+
+      setAudit(all);
+    } catch (err) {
+      console.error("INVENTORY AUDIT FAILED:", err);
+    }
+  }
+
   function errorKey(code: unknown): "actionError" | "hasLoans" | "conflict" {
     if (code === "HAS_LOANS" || code === "NO_AVAILABLE_COPY") return "hasLoans";
     if (code === "CONFLICT") return "conflict";
@@ -291,17 +418,17 @@ export default function InventoryClient({
         return;
       }
 
-      setBooks((current) =>
-        current.map((b) =>
-          b.id === book.id
-            ? {
-                ...b,
-                qty_total: json.qty_total,
-                qty_available: json.qty_available,
-              }
-            : b,
-        ),
-      );
+      const patch = (b: Book) =>
+        b.id === book.id
+          ? {
+              ...b,
+              qty_total: json.qty_total,
+              qty_available: json.qty_available,
+            }
+          : b;
+
+      setBooks((current) => current.map(patch));
+      setAudit((current) => (current ? current.map(patch) : current));
     } catch (err) {
       console.error("INVENTORY ADJUST NETWORK ERROR:", err);
       setActionError("actionError");
@@ -341,6 +468,8 @@ export default function InventoryClient({
       setTotal((current) =>
         current === null ? current : Math.max(0, current - 1),
       );
+
+      void loadAudit();
     } catch (err) {
       console.error("INVENTORY DELETE NETWORK ERROR:", err);
       setActionError("actionError");
@@ -474,6 +603,9 @@ export default function InventoryClient({
 
       saved = true;
 
+      // refresh the to-do lists so fixed books drop off
+      void loadAudit();
+
       setEditBook(null);
       setDraft(null);
     } catch (err) {
@@ -488,6 +620,11 @@ export default function InventoryClient({
       setSaving(false);
     }
   }
+
+  // load all books once for the to-do tabs
+  useEffect(() => {
+    void loadAudit();
+  }, []);
 
   // typing: apply the search after a short pause
   useEffect(() => {
@@ -511,7 +648,7 @@ export default function InventoryClient({
   useEffect(() => {
     const el = sentinelRef.current;
 
-    if (!el || !hasMore || loading || error) return;
+    if (!el || !hasMore || loading || error || tab !== "all") return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -526,7 +663,7 @@ export default function InventoryClient({
 
     return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasMore, loading, error, books.length, activeQuery]);
+  }, [hasMore, loading, error, books.length, activeQuery, tab]);
 
   // close dialogs with Escape
   useEffect(() => {
@@ -605,7 +742,59 @@ export default function InventoryClient({
     );
   }
 
+  // to-do lists
+  const missingIsbn = useMemo(
+    () => (audit ?? []).filter((b) => !b.isbn?.trim()),
+    [audit],
+  );
+
+  const missingCover = useMemo(
+    () => (audit ?? []).filter((b) => !b.cover),
+    [audit],
+  );
+
+  const dupes = useMemo(() => findDuplicates(audit ?? []), [audit]);
+
+  const todo =
+    tab === "isbn"
+      ? missingIsbn
+      : tab === "cover"
+        ? missingCover
+        : tab === "dupes"
+          ? dupes.list
+          : null;
+
+  const needle = activeQuery.toLowerCase();
+
+  const shown = todo
+    ? needle
+      ? todo.filter((b) =>
+          [b.title, b.author, b.isbn].some((v) =>
+            v?.toLowerCase().includes(needle),
+          ),
+        )
+      : todo
+    : books;
+
+  const tabs: { id: Tab; count: number | null }[] = [
+    { id: "all", count: total },
+    { id: "isbn", count: audit ? missingIsbn.length : null },
+    { id: "cover", count: audit ? missingCover.length : null },
+    { id: "dupes", count: audit ? dupes.list.length : null },
+  ];
+
   const initialLoading = loading && books.length === 0;
+
+  // small badge showing which duplicate group a book belongs to
+  function dupeBadge(book: Book) {
+    if (tab !== "dupes" || !dupes.groupOf[book.id]) return null;
+
+    return (
+      <span className="mt-1 inline-block rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+        #{dupes.groupOf[book.id]}
+      </span>
+    );
+  }
 
   return (
     <div className="space-y-4 pb-24">
@@ -619,8 +808,31 @@ export default function InventoryClient({
         )}
       </div>
 
-      {/* search + camera: stay fixed at the top while the list scrolls */}
+      {/* tabs + search + camera: stay fixed at the top while the list scrolls */}
       <div className="sticky top-0 z-30 -mx-4 space-y-2 border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {tabs.map(({ id, count }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              aria-pressed={tab === id}
+              className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium ${
+                tab === id
+                  ? "border-blue-600 bg-blue-600 text-white"
+                  : "border-slate-300 bg-white text-slate-700"
+              }`}
+              style={{ touchAction: "manipulation" }}
+            >
+              {t(`filters.${id}`)}
+
+              {count !== null && (
+                <span className="ml-1.5 tabular-nums opacity-80">{count}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -706,8 +918,28 @@ export default function InventoryClient({
         </div>
       )}
 
+      {/* to-do tabs: what to do, loading and done states */}
+      {tab !== "all" && (
+        <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
+          {t(`hint.${tab}`)}
+        </div>
+      )}
+
+      {tab !== "all" && audit && shown.length === 0 && (
+        <p className="py-14 text-center text-sm text-slate-500">
+          {t("filters.done")}
+        </p>
+      )}
+
+      {tab !== "all" && audit === null && (
+        <p className="flex items-center justify-center gap-2 py-14 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          {t("loading")}
+        </p>
+      )}
+
       {/* desktop: table */}
-      {books.length > 0 && (
+      {shown.length > 0 && (
         <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-slate-500">
@@ -728,7 +960,7 @@ export default function InventoryClient({
             </thead>
 
             <tbody className="divide-y divide-slate-100">
-              {books.map((book) => (
+              {shown.map((book) => (
                 <tr key={book.id} className="align-top hover:bg-slate-50/70">
                   <td className="p-3">
                     <BookCover
@@ -747,6 +979,8 @@ export default function InventoryClient({
                         {book.author}
                       </div>
                     )}
+
+                    {dupeBadge(book)}
                   </td>
 
                   <td className="p-3">{book.publisher ?? "—"}</td>
@@ -780,10 +1014,10 @@ export default function InventoryClient({
       )}
 
       {/* mobile: edge-to-edge grid, cards touch the screen sides */}
-      {books.length > 0 && (
+      {shown.length > 0 && (
         <div className="-mx-4 overflow-hidden border-y border-slate-200 md:hidden">
           <ul className="-mb-px -mr-px grid grid-cols-2 sm:grid-cols-3">
-            {books.map((book) => {
+            {shown.map((book) => {
               const category = categoryLabel(book.category);
 
               return (
@@ -807,6 +1041,8 @@ export default function InventoryClient({
                     <h3 className="break-words text-[15px] font-semibold leading-snug text-slate-900">
                       {book.title}
                     </h3>
+
+                    {dupeBadge(book)}
 
                     {book.author && (
                       <p className="break-words text-sm leading-snug text-slate-600">
@@ -869,7 +1105,7 @@ export default function InventoryClient({
       )}
 
       {/* states */}
-      {initialLoading && (
+      {tab === "all" && initialLoading && (
         <div className="-mx-4 overflow-hidden border-y border-slate-200 md:hidden">
           <ul className="-mb-px -mr-px grid grid-cols-2 sm:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -895,7 +1131,7 @@ export default function InventoryClient({
         </div>
       )}
 
-      {loading && (
+      {tab === "all" && loading && (
         <p
           className={`items-center justify-center gap-2 py-6 text-sm text-slate-500 ${
             initialLoading ? "hidden md:flex" : "flex"
@@ -906,7 +1142,7 @@ export default function InventoryClient({
         </p>
       )}
 
-      {!loading && !error && books.length === 0 && (
+      {tab === "all" && !loading && !error && books.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-14 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
             <BookOpen className="h-7 w-7" aria-hidden />
@@ -916,7 +1152,7 @@ export default function InventoryClient({
         </div>
       )}
 
-      {error && (
+      {tab === "all" && error && (
         <div className="flex items-center justify-between gap-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">
           <span className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />

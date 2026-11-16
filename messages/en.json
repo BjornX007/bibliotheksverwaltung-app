@@ -162,7 +162,19 @@
       "wrongType": "Please choose an image file.",
       "tooBig": "The image is too large.",
       "failed": "Upload failed. Please try again."
-    }
+    },
+    "filters": {
+  "all": "All",
+  "isbn": "No ISBN",
+  "cover": "No cover",
+  "dupes": "Duplicates",
+  "done": "All done ✓"
+},
+"hint": {
+  "isbn": "Tap ✏️, scan or type the ISBN, then save.",
+  "cover": "Tap ✏️, upload a cover photo, then save.",
+  "dupes": "Same number = likely the same book. Fix the misspelled title with ✏️, or delete the extra entry with 🗑️ and raise the stock (+) on the one you keep."
+}
   },
  
 "loans": {

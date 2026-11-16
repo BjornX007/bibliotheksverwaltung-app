@@ -159,7 +159,19 @@
       "wrongType": "Zgjidh një skedar imazhi.",
       "tooBig": "Fotoja është shumë e madhe.",
       "failed": "Ngarkimi dështoi. Provo përsëri."
-    }
+    },
+    "filters": {
+  "all": "Të gjitha",
+  "isbn": "Pa ISBN",
+  "cover": "Pa kopertinë",
+  "dupes": "Dublikatë",
+  "done": "Gjithçka në rregull ✓"
+},
+"hint": {
+  "isbn": "Shtyp ✏️, skano ose shkruaj ISBN-në, pastaj ruaj.",
+  "cover": "Shtyp ✏️, ngarko foton e kopertinës, pastaj ruaj.",
+  "dupes": "Numri i njëjtë = ndoshta i njëjti libër. Korrigjo titullin me ✏️, ose fshi dublikatin me 🗑️ dhe rrit stokun (+) te libri që mbetet."
+}
   },
   "loans": {
     "stepBook": "Libri",
